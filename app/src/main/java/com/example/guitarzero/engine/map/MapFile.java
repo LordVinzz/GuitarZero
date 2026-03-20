@@ -215,7 +215,8 @@ public final class MapFile {
             runtimeNotes.add(new Note(
                     storedNote.getStringIndex(),
                     storedNote.getAbsoluteTimeMs(),
-                    storedNote.getDurationMs()
+                    storedNote.getDurationMs(),
+                    0f
             ));
         }
         return runtimeNotes;

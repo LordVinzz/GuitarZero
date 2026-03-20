@@ -71,7 +71,7 @@ public class GameplaySession {
         double bestScore = -1d;
 
         for (Note note : notes) {
-            if (note.corde != stringIndex) {
+            if (note.string != stringIndex) {
                 continue;
             }
 
@@ -125,8 +125,8 @@ public class GameplaySession {
         for (Note note : notes) {
             float normalizedScore = (float) (note.evalScore(gameTimeMs) / MAX_NOTE_SCORE);
             normalizedScore = clamp(normalizedScore);
-            if (normalizedScore > highlightStrengths[note.corde]) {
-                highlightStrengths[note.corde] = normalizedScore;
+            if (normalizedScore > highlightStrengths[note.string]) {
+                highlightStrengths[note.string] = normalizedScore;
             }
         }
 
@@ -158,7 +158,7 @@ public class GameplaySession {
         float headYNormalized = computeEventYNormalized(note.absoluteTime, travelDurationMs);
         float tailYNormalized = computeEventYNormalized(noteOffTimeMs, travelDurationMs);
 
-        return new NoteWaveState(note.corde, headYNormalized, tailYNormalized, 1f);
+        return new NoteWaveState(note.string, headYNormalized, tailYNormalized, 1f);
     }
 
     private float computeEventYNormalized(long eventTimeMs, long travelDurationMs) {

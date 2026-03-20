@@ -8,24 +8,32 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.example.guitarzero.LightSensorManager;
 import com.example.guitarzero.R;
+import com.example.guitarzero.engine.AudioPlayer;
 import com.example.guitarzero.game.GameState;
 import com.example.guitarzero.render.canvas.GameView;
 import com.example.guitarzero.render.opengl.RopeGLSurfaceView;
 
 public class MainActivity extends Activity {
+    private static final float NOTE_SLOW_ZONE_Y_NORMALIZED = 0.75f;
+
     private GameState gameState;
     private RopeGLSurfaceView ropeGLSurfaceView;
 
     private View mainMenuPanel;
     private View chooseSongPanel;
     private View inGameOverlay;
+    private ImageView slowZoneBarView;
     private TextView mainMenuSelectedSongText;
     private TextView scoreTextView;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
+    private AudioPlayer player;
+    private LightSensorManager lightSensorManager;
     private final Runnable scoreOverlayUpdater = new Runnable() {
         @Override
         public void run() {
@@ -54,6 +62,18 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
         gameState = new GameState(getResources());
+        player = new AudioPlayer(this, R.raw.test);
+        lightSensorManager = new LightSensorManager(this, lux -> {
+            float multiplier;
+            if (lux < 10f) {
+                multiplier = 0.5f;
+            } else if (lux < 1000f) {
+                multiplier = 1.0f;
+            } else {
+                multiplier = 2.0f;
+            }
+            player.setPitch(multiplier);
+        });
 
         setupRenderViews();
         bindViews();
@@ -64,6 +84,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (player != null) {
+            player.play();
+        }
+        if (lightSensorManager != null) {
+            lightSensorManager.register();
+        }
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onResume();
             ropeGLSurfaceView.setInGameRendering(
@@ -80,6 +106,12 @@ public class MainActivity extends Activity {
         stopScoreOverlayUpdates();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onPause();
+        }
+        if (lightSensorManager != null) {
+            lightSensorManager.unregister();
+        }
+        if (player != null) {
+            player.stop();
         }
         super.onPause();
     }
@@ -101,10 +133,21 @@ public class MainActivity extends Activity {
         mainMenuPanel = findViewById(R.id.main_menu_panel);
         chooseSongPanel = findViewById(R.id.choose_song_panel);
         inGameOverlay = findViewById(R.id.in_game_overlay);
+        slowZoneBarView = findViewById(R.id.image_slow_zone_bar);
         mainMenuSelectedSongText = findViewById(R.id.text_selected_song);
         scoreTextView = findViewById(R.id.text_score_overlay);
         openMainMenuButton = findViewById(R.id.button_open_main_menu);
         openMainMenuButton.setImageResource(R.drawable.ic_settings_overlay);
+        inGameOverlay.addOnLayoutChangeListener((view,
+                left,
+                top,
+                right,
+                bottom,
+                oldLeft,
+                oldTop,
+                oldRight,
+                oldBottom) -> updateSlowZoneBarPosition());
+        inGameOverlay.post(this::updateSlowZoneBarPosition);
 
         songButtons = new Button[] {
                 findViewById(R.id.button_song_0),
@@ -160,6 +203,7 @@ public class MainActivity extends Activity {
 
         if (isInGame) {
             startScoreOverlayUpdates();
+            updateSlowZoneBarPosition();
         } else {
             stopScoreOverlayUpdates();
         }
@@ -202,5 +246,20 @@ public class MainActivity extends Activity {
         }
 
         scoreTextView.removeCallbacks(scoreOverlayUpdater);
+    }
+
+    private void updateSlowZoneBarPosition() {
+        if (inGameOverlay == null || slowZoneBarView == null) {
+            return;
+        }
+
+        int overlayHeight = inGameOverlay.getHeight();
+        int barHeight = slowZoneBarView.getHeight();
+        if (overlayHeight <= 0 || barHeight <= 0) {
+            return;
+        }
+
+        float centeredY = (overlayHeight * NOTE_SLOW_ZONE_Y_NORMALIZED) - (barHeight / 2f);
+        slowZoneBarView.setY(centeredY);
     }
 }

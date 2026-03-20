@@ -30,6 +30,16 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
+    <ImageView
+        android:id="@+id/image_slow_zone_bar"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_gravity="top"
+        android:adjustViewBounds="false"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/barre_metal" />
+
     <ImageButton
         android:id="@+id/button_open_main_menu"
         android:layout_width="128px"

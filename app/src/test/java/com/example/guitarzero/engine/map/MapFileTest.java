@@ -126,7 +126,7 @@ public class MapFileTest {
         assertNotSame(firstRuntimeNotes.get(0), secondRuntimeNotes.get(0));
         assertEquals(firstRuntimeNotes.get(0).absoluteTime, secondRuntimeNotes.get(0).absoluteTime);
         assertEquals(firstRuntimeNotes.get(0).duration, secondRuntimeNotes.get(0).duration);
-        assertEquals(firstRuntimeNotes.get(0).corde, secondRuntimeNotes.get(0).corde);
+        assertEquals(firstRuntimeNotes.get(0).string, secondRuntimeNotes.get(0).string);
     }
 
     private MapFile createMapFile(long seed) throws IOException {
