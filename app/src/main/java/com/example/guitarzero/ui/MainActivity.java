@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 
+import com.example.guitarzero.LightSensorManager;
 import com.example.guitarzero.R;
 import com.example.guitarzero.game.GameState;
 import com.example.guitarzero.render.canvas.GameView;
@@ -24,6 +25,18 @@ public class MainActivity extends Activity {
     private android.widget.TextView mainMenuSelectedSongText;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
+    private LightSensorManager lightSensorManager = new LightSensorManager(this, lux -> {
+        // TODO: update note frequency multiplier, may need to have GameView as class attribute
+        float multiplier; // ad-hoc
+        if (lux < 10) {
+            multiplier = 0.5f; // very dark light (finger on sensor)
+        } else if (lux < 1000) {
+            multiplier = 1.0f; // normal light
+        } else {
+            multiplier = 2.0f; // sunlight
+        }
+//        gameView.setFrequencyMultiplier(multiplier);
+    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +59,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        lightSensorManager.register();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onResume();
             ropeGLSurfaceView.setInGameRendering(
@@ -56,10 +70,11 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        super.onPause();
+        lightSensorManager.unregister();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onPause();
         }
-        super.onPause();
     }
 
     private void setupRenderViews() {
