@@ -53,7 +53,8 @@ public class GameEngine {
             return true;
         }
 
-        gameplaySession.registerStringHit(touchedStringIndex);
+        HitResult hitResult = gameplaySession.registerStringHit(touchedStringIndex);
+        canvasGameRenderer.showHitResult(hitResult);
         return true;
     }
 

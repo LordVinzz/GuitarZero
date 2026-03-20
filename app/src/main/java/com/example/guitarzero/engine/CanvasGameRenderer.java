@@ -6,12 +6,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 
 import com.example.guitarzero.R;
 
 public class CanvasGameRenderer {
     private Bitmap[] backgroundBitmaps;
     private final Paint hudPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private HitResult lastHitResult;
+    private long hitResultTimestamp;
+    private static final long HIT_DISPLAY_DURATION = 800;
 
     public CanvasGameRenderer() {
         hudPaint.setTextSize(50f);
@@ -24,7 +28,7 @@ public class CanvasGameRenderer {
         }
 
         release();
-        backgroundBitmaps = new Bitmap[] {
+        backgroundBitmaps = new Bitmap[]{
                 loadScaledBitmap(resources, R.drawable.background, width, height),
                 loadScaledBitmap(resources, R.drawable.background_boost_1, width, height),
                 loadScaledBitmap(resources, R.drawable.background_boost_2, width, height)
@@ -52,6 +56,13 @@ public class CanvasGameRenderer {
         );
         canvas.drawText("Combo: x" + gameplaySession.getComboMultiplier(), 50, 340, hudPaint);
         canvas.drawText("Jetons: " + gameplaySession.getComboTokens() + "/10", 50, 420, hudPaint);
+
+        // draw hit accuracy text indicator
+        if (lastHitResult != null) {
+            if (System.currentTimeMillis() - hitResultTimestamp < HIT_DISPLAY_DURATION) {
+                drawHitResult(canvas);
+            } else lastHitResult = null;
+        }
     }
 
     public void release() {
@@ -94,5 +105,58 @@ public class CanvasGameRenderer {
         }
 
         return backgroundBitmaps[Math.min(2, backgroundBitmaps.length - 1)];
+    }
+
+
+    public void showHitResult(HitResult result) {
+        lastHitResult = result;
+        hitResultTimestamp = System.currentTimeMillis();
+    }
+
+    private void drawHitResult(Canvas canvas) {
+        if (lastHitResult == null) return;
+        if (System.currentTimeMillis() - hitResultTimestamp > HIT_DISPLAY_DURATION) {
+            lastHitResult = null;
+            return;
+        }
+
+        // Compute opacity: fade out at the end
+        float elapsed = System.currentTimeMillis() - hitResultTimestamp;
+        float alpha = 1f - (elapsed / HIT_DISPLAY_DURATION);
+
+        Paint paint = new Paint();
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTypeface(Typeface.DEFAULT_BOLD);
+        paint.setAntiAlias(true);
+
+        String text;
+        switch (lastHitResult) {
+            case PERFECT:
+                text = "PERFECT";
+                paint.setTextSize(80f);
+                paint.setColor(Color.argb((int) (alpha * 255), 255, 223, 0)); // doré
+                // Glow effect
+                paint.setShadowLayer(20f, 0f, 0f, Color.argb((int) (alpha * 200), 255, 200, 0));
+                break;
+            case GOOD:
+                text = "GOOD";
+                paint.setTextSize(70f);
+                paint.setColor(Color.argb((int) (alpha * 255), 100, 220, 255)); // bleu clair
+                paint.setShadowLayer(15f, 0f, 0f, Color.argb((int) (alpha * 200), 50, 180, 255));
+                break;
+            case MISS:
+                text = "MISS";
+                paint.setTextSize(70f);
+                paint.setColor(Color.argb((int) (alpha * 255), 255, 80, 80)); // rouge
+                paint.setShadowLayer(15f, 0f, 0f, Color.argb((int) (alpha * 200), 200, 0, 0));
+                break;
+            default:
+                return;
+        }
+
+        float x = canvas.getWidth() / 2f;
+        float y = canvas.getHeight() - 150f;
+
+        canvas.drawText(text, x, y, paint);
     }
 }
