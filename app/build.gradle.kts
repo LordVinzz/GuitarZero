@@ -4,14 +4,12 @@ plugins {
 
 android {
     namespace = "com.example.guitarzero"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 27
 
     defaultConfig {
         applicationId = "com.example.guitarzero"
-        minSdk = 26
-        targetSdk = 36
+        minSdk = 27
+        targetSdk = 27
         versionCode = 1
         versionName = "1.0"
 
@@ -28,16 +26,12 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.activity)
-    implementation(libs.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
