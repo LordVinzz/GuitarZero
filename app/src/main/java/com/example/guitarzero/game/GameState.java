@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 
 import com.example.guitarzero.engine.GameEngine;
 import com.example.guitarzero.engine.GuitarString;
+import com.example.guitarzero.engine.NoteWaveRenderState;
 
 public class GameState {
     public static final int STRING_COUNT = 4;
@@ -95,6 +96,10 @@ public class GameState {
 
     public synchronized GuitarString.RenderState[] getGuitarStringRenderStates() {
         return gameEngine.getGuitarStringRenderStates(currentScreen == ScreenState.IN_GAME);
+    }
+
+    public synchronized NoteWaveRenderState[] getNoteWaveRenderStates() {
+        return gameEngine.getNoteWaveRenderStates(currentScreen == ScreenState.IN_GAME);
     }
 
     private boolean isValidSongIndex(int songIndex) {

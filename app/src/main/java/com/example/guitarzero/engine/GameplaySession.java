@@ -6,6 +6,21 @@ import java.util.List;
 
 public class GameplaySession {
     private static final double MIN_SCORE_TO_HIT = 0.01;
+    private static final float MAX_NOTE_SCORE = 1000f;
+    private static final long APPROACH_TIME_MS = 2000L;
+    private static final float NOTE_HIT_Y_NORMALIZED = 0.75f;
+
+    public static final class NoteWaveState {
+        public final int stringIndex;
+        public final float waveYNormalized;
+        public final float intensity;
+
+        public NoteWaveState(int stringIndex, float waveYNormalized, float intensity) {
+            this.stringIndex = stringIndex;
+            this.waveYNormalized = waveYNormalized;
+            this.intensity = intensity;
+        }
+    }
 
     private final int stringCount;
     private final List<Note> notes = new ArrayList<Note>();
@@ -72,5 +87,59 @@ public class GameplaySession {
 
     public int getRemainingNotesCount() {
         return notes.size();
+    }
+
+    public float[] getStringHighlightStrengths() {
+        float[] highlightStrengths = new float[stringCount];
+
+        for (Note note : notes) {
+            float normalizedScore = (float) (note.evalScore(gameTimeMs) / MAX_NOTE_SCORE);
+            normalizedScore = clamp(normalizedScore);
+            if (normalizedScore > highlightStrengths[note.corde]) {
+                highlightStrengths[note.corde] = normalizedScore;
+            }
+        }
+
+        return highlightStrengths;
+    }
+
+    public NoteWaveState[] getNoteWaveStates() {
+        List<NoteWaveState> waveStates = new ArrayList<NoteWaveState>();
+
+        for (Note note : notes) {
+            NoteWaveState waveState = createNoteWaveState(note);
+            if (waveState != null) {
+                waveStates.add(waveState);
+            }
+        }
+
+        return waveStates.toArray(new NoteWaveState[waveStates.size()]);
+    }
+
+    private NoteWaveState createNoteWaveState(Note note) {
+        long visibleStartTimeMs = note.absoluteTime - APPROACH_TIME_MS;
+        long visibleEndTimeMs = note.absoluteTime + Math.max(note.duration, 1L);
+        if (gameTimeMs < visibleStartTimeMs || gameTimeMs > visibleEndTimeMs) {
+            return null;
+        }
+
+        float waveYNormalized;
+        if (gameTimeMs <= note.absoluteTime) {
+            float preHitProgress =
+                    (gameTimeMs - visibleStartTimeMs) / (float) APPROACH_TIME_MS;
+            waveYNormalized = clamp(preHitProgress * NOTE_HIT_Y_NORMALIZED);
+        } else {
+            float postHitProgress =
+                    (gameTimeMs - note.absoluteTime) / (float) Math.max(note.duration, 1L);
+            waveYNormalized = clamp(
+                    NOTE_HIT_Y_NORMALIZED + (postHitProgress * (1f - NOTE_HIT_Y_NORMALIZED))
+            );
+        }
+
+        return new NoteWaveState(note.corde, waveYNormalized, 1f);
+    }
+
+    private float clamp(float value) {
+        return Math.max(0f, Math.min(value, 1f));
     }
 }

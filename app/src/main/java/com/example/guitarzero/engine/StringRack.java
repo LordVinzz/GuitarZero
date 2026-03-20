@@ -48,12 +48,31 @@ public class StringRack {
         return -1;
     }
 
-    public GuitarString.RenderState[] getRenderStates(boolean visible) {
+    public GuitarString.RenderState[] getRenderStates(boolean visible, float[] highlightStrengths) {
         GuitarString.RenderState[] renderStates = new GuitarString.RenderState[guitarStrings.size()];
         for (int stringIndex = 0; stringIndex < guitarStrings.size(); stringIndex++) {
-            renderStates[stringIndex] = guitarStrings.get(stringIndex).getRenderState(visible);
+            float highlightStrength = 0f;
+            if (highlightStrengths != null && stringIndex < highlightStrengths.length) {
+                highlightStrength = highlightStrengths[stringIndex];
+            }
+            renderStates[stringIndex] = guitarStrings.get(stringIndex).getRenderState(
+                    visible,
+                    highlightStrength
+            );
         }
         return renderStates;
+    }
+
+    public float getCenterXNormalized(int stringIndex) {
+        return guitarStrings.get(stringIndex).getCenterXNormalized();
+    }
+
+    public float getLaneWidthNormalized() {
+        if (guitarStrings.isEmpty()) {
+            return 0f;
+        }
+
+        return 1f / guitarStrings.size();
     }
 
     public void resetOscillations() {

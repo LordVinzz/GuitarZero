@@ -9,29 +9,35 @@ public class GuitarString {
     private static final float STOP_ENVELOPE_THRESHOLD = 0.01f;
 
     public static final class RenderState {
+        public final int stringIndex;
         public final boolean visible;
         public final float centerXNormalized;
         public final float scaleX;
         public final float scaleY;
+        public final float highlightStrength;
         public final float oscillationTimeSeconds;
         public final float displacementAmplitude;
         public final float oscillationAngularFrequency;
         public final float oscillationDamping;
 
         public RenderState(
+                int stringIndex,
                 boolean visible,
                 float centerXNormalized,
                 float scaleX,
                 float scaleY,
+                float highlightStrength,
                 float oscillationTimeSeconds,
                 float displacementAmplitude,
                 float oscillationAngularFrequency,
                 float oscillationDamping
         ) {
+            this.stringIndex = stringIndex;
             this.visible = visible;
             this.centerXNormalized = centerXNormalized;
             this.scaleX = scaleX;
             this.scaleY = scaleY;
+            this.highlightStrength = highlightStrength;
             this.oscillationTimeSeconds = oscillationTimeSeconds;
             this.displacementAmplitude = displacementAmplitude;
             this.oscillationAngularFrequency = oscillationAngularFrequency;
@@ -53,6 +59,10 @@ public class GuitarString {
 
     public int getStringIndex() {
         return stringIndex;
+    }
+
+    public float getCenterXNormalized() {
+        return centerXNormalized;
     }
 
     public void setHitboxBounds(float left, float top, float right, float bottom, float surfaceWidth) {
@@ -89,12 +99,14 @@ public class GuitarString {
         oscillationTimeSeconds = 0f;
     }
 
-    public RenderState getRenderState(boolean visible) {
+    public RenderState getRenderState(boolean visible, float highlightStrength) {
         return new RenderState(
+                stringIndex,
                 visible,
                 centerXNormalized,
                 DEFAULT_SCALE_X,
                 DEFAULT_SCALE_Y,
+                highlightStrength,
                 oscillationTimeSeconds,
                 oscillating ? BASE_DISPLACEMENT : 0f,
                 ANGULAR_FREQUENCY_RADIANS,

@@ -62,7 +62,31 @@ public class GameEngine {
     }
 
     public GuitarString.RenderState[] getGuitarStringRenderStates(boolean visible) {
-        return stringRack.getRenderStates(visible);
+        float[] highlightStrengths = visible ? gameplaySession.getStringHighlightStrengths() : null;
+        return stringRack.getRenderStates(visible, highlightStrengths);
+    }
+
+    public NoteWaveRenderState[] getNoteWaveRenderStates(boolean visible) {
+        if (!visible) {
+            return new NoteWaveRenderState[0];
+        }
+
+        GameplaySession.NoteWaveState[] waveStates = gameplaySession.getNoteWaveStates();
+        NoteWaveRenderState[] renderStates = new NoteWaveRenderState[waveStates.length];
+        float laneWidthNormalized = stringRack.getLaneWidthNormalized();
+
+        for (int index = 0; index < waveStates.length; index++) {
+            GameplaySession.NoteWaveState waveState = waveStates[index];
+            renderStates[index] = new NoteWaveRenderState(
+                    waveState.stringIndex,
+                    stringRack.getCenterXNormalized(waveState.stringIndex),
+                    laneWidthNormalized,
+                    waveState.waveYNormalized,
+                    waveState.intensity
+            );
+        }
+
+        return renderStates;
     }
 
     public void resetRuntimeState() {
