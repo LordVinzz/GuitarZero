@@ -48,4 +48,19 @@
         android:background="@android:color/transparent"
         android:contentDescription="@string/menu_button_label" />
 
+    <TextView
+        android:id="@+id/text_hit_result_overlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="120dp"
+        android:shadowColor="#AA000000"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="18"
+        android:textColor="@android:color/white"
+        android:textSize="44sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
 </FrameLayout>

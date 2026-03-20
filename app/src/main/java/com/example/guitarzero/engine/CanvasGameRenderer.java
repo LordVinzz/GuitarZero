@@ -12,6 +12,9 @@ import com.example.guitarzero.R;
 public class CanvasGameRenderer {
     private Bitmap[] backgroundBitmaps;
     private final Paint hudPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private HitResult lastHitResult;
+    private long hitResultTimestamp;
+    private static final long HIT_DISPLAY_DURATION = 800;
 
     public CanvasGameRenderer() {
         hudPaint.setTextSize(50f);
@@ -24,7 +27,7 @@ public class CanvasGameRenderer {
         }
 
         release();
-        backgroundBitmaps = new Bitmap[] {
+        backgroundBitmaps = new Bitmap[]{
                 loadScaledBitmap(resources, R.drawable.background, width, height),
                 loadScaledBitmap(resources, R.drawable.background_boost_1, width, height),
                 loadScaledBitmap(resources, R.drawable.background_boost_2, width, height)
@@ -93,5 +96,33 @@ public class CanvasGameRenderer {
         }
 
         return backgroundBitmaps[Math.min(2, backgroundBitmaps.length - 1)];
+    }
+
+
+    public void showHitResult(HitResult result) {
+        lastHitResult = result;
+        hitResultTimestamp = System.currentTimeMillis();
+    }
+
+    public HitResult getVisibleHitResult() {
+        if (lastHitResult == null) {
+            return null;
+        }
+
+        if (System.currentTimeMillis() - hitResultTimestamp > HIT_DISPLAY_DURATION) {
+            lastHitResult = null;
+            return null;
+        }
+
+        return lastHitResult;
+    }
+
+    public float getVisibleHitResultAlpha() {
+        if (getVisibleHitResult() == null) {
+            return 0f;
+        }
+
+        float elapsed = System.currentTimeMillis() - hitResultTimestamp;
+        return Math.max(0f, 1f - (elapsed / (float) HIT_DISPLAY_DURATION));
     }
 }

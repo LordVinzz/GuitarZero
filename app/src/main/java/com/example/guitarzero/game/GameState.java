@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import com.example.guitarzero.R;
 import com.example.guitarzero.engine.GameEngine;
 import com.example.guitarzero.engine.GuitarString;
+import com.example.guitarzero.engine.HitResult;
 import com.example.guitarzero.engine.NoteWaveRenderState;
 import com.example.guitarzero.engine.map.MapFile;
 
@@ -141,6 +142,14 @@ public class GameState {
 
     public synchronized int getCurrentScore() {
         return (int) Math.round(gameEngine.getScore());
+    }
+
+    public synchronized HitResult getVisibleHitResult() {
+        return gameEngine.getVisibleHitResult();
+    }
+
+    public synchronized float getVisibleHitResultAlpha() {
+        return gameEngine.getVisibleHitResultAlpha();
     }
 
     public synchronized void onAppResume() {

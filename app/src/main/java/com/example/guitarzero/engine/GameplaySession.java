@@ -73,7 +73,7 @@ public class GameplaySession {
         }
     }
 
-    public Note registerStringHit(int stringIndex) {
+    public HitResultData registerStringHit(int stringIndex) {
         Note bestNote = null;
         double bestScore = -1d;
 
@@ -89,19 +89,20 @@ public class GameplaySession {
             }
         }
 
-        if (bestNote == null || bestScore <= 0d) {
-            comboState.registerMiss();
-            return null;
-        }
-
+        // Update score
         score += bestScore * comboState.getMultiplier();
         notes.remove(bestNote);
 
-        if (isPerfectScore(bestScore)) {
+        // Process hit result
+        if (bestNote == null || bestScore <= 0d) {
+            comboState.registerMiss();
+            return new HitResultData(HitResult.MISS, null);
+        } else if (isPerfectScore(bestScore)) {
             comboState.registerPerfect();
+            return new HitResultData(HitResult.PERFECT, bestNote);
+        } else {
+            return new HitResultData(HitResult.GOOD, bestNote);
         }
-
-        return bestNote;
     }
 
     public long getGameTimeMs() {

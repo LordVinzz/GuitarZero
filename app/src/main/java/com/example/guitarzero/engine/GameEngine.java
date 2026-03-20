@@ -71,9 +71,10 @@ public class GameEngine {
             return true;
         }
 
-        Note hitNote = gameplaySession.registerStringHit(touchedStringIndex);
-        if (hitNote != null) {
-            mapFile.playHitAudio(hitNote);
+        HitResultData hitResultData = gameplaySession.registerStringHit(touchedStringIndex);
+        canvasGameRenderer.showHitResult(hitResultData.result);
+        if (hitResultData.note != null) {
+            mapFile.playHitAudio(hitResultData.note);
         }
         return true;
     }
@@ -84,6 +85,14 @@ public class GameEngine {
 
     public double getScore() {
         return gameplaySession.getScore();
+    }
+
+    public HitResult getVisibleHitResult() {
+        return canvasGameRenderer.getVisibleHitResult();
+    }
+
+    public float getVisibleHitResultAlpha() {
+        return canvasGameRenderer.getVisibleHitResultAlpha();
     }
 
     public GuitarString.RenderState[] getGuitarStringRenderStates(boolean visible) {
