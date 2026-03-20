@@ -13,20 +13,16 @@ public class Note {
         this.duration = duration;
     }
 
-    private double f(double x) {
-        return 1.0 / (1.0 + Math.pow(2, -8.0 * (x - 1.0)));
-    }
-
-    private double g(double x) {
-        return Math.pow(2.0, -5.0 * (x - 3.0));
-    }
-
     public double evalScore(long currentGameTimeMs) {
-        double deltaSec = Math.abs(currentGameTimeMs - absoluteTime) / 1000.0;
-        return Math.min(f(deltaSec), g(deltaSec)) * 1000;
+        if (duration <= 0) {
+            return 0.0;
+        }
+        double t = (currentGameTimeMs - absoluteTime) / (double) duration;
+        double score = -Math.abs(t) - Math.abs(t - 1.0) + 2.0;
+        return Math.max(0.0, score) * 1000;
     }
 
     public boolean isExpired(long currentGameTimeMs) {
-        return currentGameTimeMs > absoluteTime + 4000;
+        return currentGameTimeMs > absoluteTime + (3 * duration) / 2;
     }
 }

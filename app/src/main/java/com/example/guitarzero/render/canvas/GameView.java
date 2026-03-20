@@ -123,7 +123,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         score = 0d;
         notes.clear();
         for (int stringIndex = 0; stringIndex < GameState.STRING_COUNT; stringIndex++) {
-            notes.add(new Note(stringIndex, 2000L * (stringIndex + 1), 1));
+            notes.add(new Note(stringIndex, 2000L * (stringIndex + 1), 1000));
         }
     }
 
