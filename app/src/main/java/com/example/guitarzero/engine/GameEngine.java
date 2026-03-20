@@ -3,6 +3,8 @@ package com.example.guitarzero.engine;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 
+import com.example.guitarzero.engine.map.MapFile;
+
 public class GameEngine {
     private final StringRack stringRack;
     private final GameplaySession gameplaySession;
@@ -10,9 +12,9 @@ public class GameEngine {
 
     private boolean wasInGame;
 
-    public GameEngine(int stringCount) {
+    public GameEngine(int stringCount, MapFile mapFile) {
         stringRack = new StringRack(stringCount);
-        gameplaySession = new GameplaySession(stringCount);
+        gameplaySession = new GameplaySession(mapFile, stringCount);
         canvasGameRenderer = new CanvasGameRenderer();
     }
 
@@ -82,7 +84,8 @@ public class GameEngine {
                     waveState.stringIndex,
                     stringRack.getCenterXNormalized(waveState.stringIndex),
                     laneWidthNormalized,
-                    waveState.waveYNormalized,
+                    waveState.headYNormalized,
+                    waveState.tailYNormalized,
                     waveState.intensity
             );
         }

@@ -3,12 +3,16 @@ package com.example.guitarzero.game;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 
+import com.example.guitarzero.R;
 import com.example.guitarzero.engine.GameEngine;
 import com.example.guitarzero.engine.GuitarString;
 import com.example.guitarzero.engine.NoteWaveRenderState;
+import com.example.guitarzero.engine.map.MapFile;
 
 public class GameState {
     public static final int STRING_COUNT = 4;
+    private static final long DEFAULT_MAP_SEED = 42L;
+    private static final int DEFAULT_MIDI_CHANNEL_INDEX = 3;
 
     public enum ScreenState {
         IN_GAME,
@@ -16,15 +20,26 @@ public class GameState {
         CHOOSE_SONG
     }
 
-    private final String[] songs = {"Fuzz Intro", "Velvet Riff", "Arcade Solo"};
-    private final String[] levels = {"Niveau 1", "Niveau 2", "Niveau 3"};
-    private final GameEngine gameEngine = new GameEngine(STRING_COUNT);
+    private final MapFile[] mapFiles;
+    private final GameEngine gameEngine;
 
     private ScreenState currentScreen = ScreenState.MAIN_MENU;
     private int selectedSongIndex = 0;
-    private int currentLevelIndex = 0;
 
-    public GameState() {
+    public GameState(Resources resources) {
+        mapFiles = new MapFile[] {
+                MapFile.load(
+                        resources,
+                        R.raw.scom,
+                        "scom",
+                        "scom.mid",
+                        DEFAULT_MAP_SEED,
+                        DEFAULT_MIDI_CHANNEL_INDEX,
+                        STRING_COUNT,
+                        0L
+                )
+        };
+        gameEngine = new GameEngine(STRING_COUNT, mapFiles[0]);
     }
 
     public synchronized void update(float deltaTimeSeconds) {
@@ -63,7 +78,7 @@ public class GameState {
     }
 
     public synchronized int getSongCount() {
-        return songs.length;
+        return mapFiles.length;
     }
 
     public synchronized String getSongLabel(int songIndex) {
@@ -71,15 +86,15 @@ public class GameState {
             throw new IllegalArgumentException("Invalid song index: " + songIndex);
         }
 
-        return songs[songIndex];
+        return mapFiles[songIndex].getDisplayName();
     }
 
     public synchronized String getCurrentSongLabel() {
-        return songs[selectedSongIndex];
+        return mapFiles[selectedSongIndex].getDisplayName();
     }
 
     public synchronized String getCurrentLevelLabel() {
-        return levels[currentLevelIndex];
+        return "Niveau 1";
     }
 
     public synchronized void onSurfaceChanged(Resources resources, int surfaceWidth, int surfaceHeight) {
@@ -103,6 +118,6 @@ public class GameState {
     }
 
     private boolean isValidSongIndex(int songIndex) {
-        return songIndex >= 0 && songIndex < songs.length;
+        return songIndex >= 0 && songIndex < mapFiles.length;
     }
 }

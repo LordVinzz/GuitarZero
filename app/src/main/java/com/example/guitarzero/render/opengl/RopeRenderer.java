@@ -65,8 +65,8 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
     private int noteWavePositionHandle;
     private int noteWaveTexCoordHandle;
     private int noteWaveMvpMatrixHandle;
-    private int noteWaveYHandle;
-    private int noteWaveRadiusHandle;
+    private int noteWaveHeadYHandle;
+    private int noteWaveTailYHandle;
     private int noteWaveIntensityHandle;
     private int noteWaveColorHandle;
     private int textureId;
@@ -138,8 +138,8 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
         noteWavePositionHandle = GLES20.glGetAttribLocation(noteWaveProgram, "aPosition");
         noteWaveTexCoordHandle = GLES20.glGetAttribLocation(noteWaveProgram, "aTexCoord");
         noteWaveMvpMatrixHandle = GLES20.glGetUniformLocation(noteWaveProgram, "uMvpMatrix");
-        noteWaveYHandle = GLES20.glGetUniformLocation(noteWaveProgram, "uWaveYNormalized");
-        noteWaveRadiusHandle = GLES20.glGetUniformLocation(noteWaveProgram, "uWaveRadius");
+        noteWaveHeadYHandle = GLES20.glGetUniformLocation(noteWaveProgram, "uHeadYNormalized");
+        noteWaveTailYHandle = GLES20.glGetUniformLocation(noteWaveProgram, "uTailYNormalized");
         noteWaveIntensityHandle = GLES20.glGetUniformLocation(noteWaveProgram, "uWaveIntensity");
         noteWaveColorHandle = GLES20.glGetUniformLocation(noteWaveProgram, "uGlowColor");
         textureId = loadTexture(context);
@@ -255,8 +255,8 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
             updateNoteWaveMvpMatrix(noteWaveState);
             float[] color = getStringColor(noteWaveState.stringIndex);
             GLES20.glUniformMatrix4fv(noteWaveMvpMatrixHandle, 1, false, mvpMatrix, 0);
-            GLES20.glUniform1f(noteWaveYHandle, noteWaveState.waveYNormalized);
-            GLES20.glUniform1f(noteWaveRadiusHandle, 0.08f);
+            GLES20.glUniform1f(noteWaveHeadYHandle, noteWaveState.headYNormalized);
+            GLES20.glUniform1f(noteWaveTailYHandle, noteWaveState.tailYNormalized);
             GLES20.glUniform1f(noteWaveIntensityHandle, noteWaveState.intensity);
             GLES20.glUniform3f(noteWaveColorHandle, color[0], color[1], color[2]);
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, noteWaveVertexCount);

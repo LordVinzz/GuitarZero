@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
         );
 
         setContentView(R.layout.activity_main);
-        gameState = new GameState();
+        gameState = new GameState(getResources());
 
         setupRenderViews();
         bindViews();
@@ -141,8 +141,15 @@ public class MainActivity extends Activity {
                 getString(R.string.selected_song_format, gameState.getCurrentSongLabel())
         );
 
+        int songCount = gameState.getSongCount();
         int selectedSongIndex = gameState.getSelectedSongIndex();
         for (int i = 0; i < songButtons.length; i++) {
+            if (i >= songCount) {
+                songButtons[i].setVisibility(View.GONE);
+                continue;
+            }
+
+            songButtons[i].setVisibility(View.VISIBLE);
             String label = gameState.getSongLabel(i);
             if (i == selectedSongIndex) {
                 label = label + " (selected)";
