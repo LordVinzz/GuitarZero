@@ -13,7 +13,6 @@ import android.widget.TextView;
 
 import com.example.guitarzero.LightSensorManager;
 import com.example.guitarzero.R;
-import com.example.guitarzero.engine.AudioPlayer;
 import com.example.guitarzero.game.GameState;
 import com.example.guitarzero.render.canvas.GameView;
 import com.example.guitarzero.render.opengl.RopeGLSurfaceView;
@@ -32,7 +31,6 @@ public class MainActivity extends Activity {
     private TextView scoreTextView;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
-    private AudioPlayer player;
     private LightSensorManager lightSensorManager;
     private final Runnable scoreOverlayUpdater = new Runnable() {
         @Override
@@ -61,8 +59,7 @@ public class MainActivity extends Activity {
         );
 
         setContentView(R.layout.activity_main);
-        gameState = new GameState(getResources());
-        player = new AudioPlayer(this, R.raw.test);
+        gameState = new GameState(this);
         lightSensorManager = new LightSensorManager(this, lux -> {
             float multiplier;
             if (lux < 10f) {
@@ -72,7 +69,7 @@ public class MainActivity extends Activity {
             } else {
                 multiplier = 2.0f;
             }
-            player.setPitch(multiplier);
+            gameState.setHitSoundPitch(multiplier);
         });
 
         setupRenderViews();
@@ -84,12 +81,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (player != null) {
-            player.play();
-        }
         if (lightSensorManager != null) {
             lightSensorManager.register();
         }
+        gameState.onAppResume();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onResume();
             ropeGLSurfaceView.setInGameRendering(
@@ -110,9 +105,7 @@ public class MainActivity extends Activity {
         if (lightSensorManager != null) {
             lightSensorManager.unregister();
         }
-        if (player != null) {
-            player.stop();
-        }
+        gameState.onAppPause();
         super.onPause();
     }
 

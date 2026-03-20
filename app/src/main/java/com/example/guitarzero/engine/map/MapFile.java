@@ -1,7 +1,9 @@
 package com.example.guitarzero.engine.map;
 
+import android.content.Context;
 import android.content.res.Resources;
 
+import com.example.guitarzero.engine.AudioPlayer;
 import com.example.guitarzero.engine.Note;
 
 import java.io.ByteArrayOutputStream;
@@ -73,6 +75,10 @@ public final class MapFile {
     private final long seed;
     private final int sourceResId;
     private final int midiChannelIndex;
+    private final int backgroundAudioResId;
+    private final int hitAudioResId;
+    private final AudioPlayer backgroundAudioPlayer;
+    private final AudioPlayer hitAudioPlayer;
     private final List<TempoChange> tempoChanges;
     private final List<StoredNote> storedNotes;
 
@@ -82,6 +88,10 @@ public final class MapFile {
             long seed,
             int sourceResId,
             int midiChannelIndex,
+            int backgroundAudioResId,
+            int hitAudioResId,
+            AudioPlayer backgroundAudioPlayer,
+            AudioPlayer hitAudioPlayer,
             List<TempoChange> tempoChanges,
             List<StoredNote> storedNotes
     ) {
@@ -90,20 +100,28 @@ public final class MapFile {
         this.seed = seed;
         this.sourceResId = sourceResId;
         this.midiChannelIndex = midiChannelIndex;
+        this.backgroundAudioResId = backgroundAudioResId;
+        this.hitAudioResId = hitAudioResId;
+        this.backgroundAudioPlayer = backgroundAudioPlayer;
+        this.hitAudioPlayer = hitAudioPlayer;
         this.tempoChanges = Collections.unmodifiableList(new ArrayList<TempoChange>(tempoChanges));
         this.storedNotes = Collections.unmodifiableList(new ArrayList<StoredNote>(storedNotes));
     }
 
     public static MapFile load(
-            Resources resources,
+            Context context,
             int rawResId,
             String id,
             String displayName,
             long seed,
             int midiChannelIndex,
             int stringCount,
-            long timelineOffsetMs
+            long timelineOffsetMs,
+            int backgroundAudioResId,
+            int hitAudioResId
     ) {
+        Context applicationContext = context.getApplicationContext();
+        Resources resources = applicationContext.getResources();
         InputStream inputStream = resources.openRawResource(rawResId);
         try {
             return fromMidiBytes(
@@ -114,6 +132,10 @@ public final class MapFile {
                     midiChannelIndex,
                     stringCount,
                     timelineOffsetMs,
+                    backgroundAudioResId,
+                    hitAudioResId,
+                    createAudioPlayer(applicationContext, backgroundAudioResId),
+                    createAudioPlayer(applicationContext, hitAudioResId),
                     readAllBytes(inputStream)
             );
         } catch (IOException exception) {
@@ -134,6 +156,10 @@ public final class MapFile {
             int midiChannelIndex,
             int stringCount,
             long timelineOffsetMs,
+            int backgroundAudioResId,
+            int hitAudioResId,
+            AudioPlayer backgroundAudioPlayer,
+            AudioPlayer hitAudioPlayer,
             byte[] midiBytes
     ) {
         if (stringCount <= 0) {
@@ -204,6 +230,10 @@ public final class MapFile {
                 seed,
                 sourceResId,
                 midiChannelIndex,
+                backgroundAudioResId,
+                hitAudioResId,
+                backgroundAudioPlayer,
+                hitAudioPlayer,
                 tempoChanges,
                 storedNotes
         );
@@ -242,6 +272,14 @@ public final class MapFile {
         return midiChannelIndex;
     }
 
+    public int getBackgroundAudioResId() {
+        return backgroundAudioResId;
+    }
+
+    public int getHitAudioResId() {
+        return hitAudioResId;
+    }
+
     public List<TempoChange> getTempoChanges() {
         return tempoChanges;
     }
@@ -267,6 +305,41 @@ public final class MapFile {
         return currentTempoChange.getBeatsPerMinute();
     }
 
+    public void startBackgroundAudio() {
+        if (backgroundAudioPlayer != null) {
+            backgroundAudioPlayer.play();
+        }
+    }
+
+    public void stopBackgroundAudio() {
+        if (backgroundAudioPlayer != null) {
+            backgroundAudioPlayer.stop();
+        }
+    }
+
+    public void playHitAudio() {
+        if (hitAudioPlayer != null) {
+            hitAudioPlayer.play();
+        }
+    }
+
+    public void stopHitAudio() {
+        if (hitAudioPlayer != null) {
+            hitAudioPlayer.stop();
+        }
+    }
+
+    public void stopAllAudio() {
+        stopBackgroundAudio();
+        stopHitAudio();
+    }
+
+    public void setHitAudioPitch(float pitch) {
+        if (hitAudioPlayer != null) {
+            hitAudioPlayer.setPitch(pitch);
+        }
+    }
+
     private static byte[] readAllBytes(InputStream inputStream) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         byte[] buffer = new byte[4096];
@@ -277,6 +350,14 @@ public final class MapFile {
         }
 
         return outputStream.toByteArray();
+    }
+
+    private static AudioPlayer createAudioPlayer(Context context, int resId) {
+        if (resId == 0) {
+            return null;
+        }
+
+        return new AudioPlayer(context, resId);
     }
 
     private static List<StoredNote> keepLongestSimultaneousNotesOnSameString(

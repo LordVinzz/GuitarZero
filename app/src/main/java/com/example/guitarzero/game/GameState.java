@@ -1,5 +1,6 @@
 package com.example.guitarzero.game;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 
@@ -25,17 +26,20 @@ public class GameState {
     private ScreenState currentScreen = ScreenState.MAIN_MENU;
     private int selectedSongIndex = 0;
 
-    public GameState(Resources resources) {
+    public GameState(Context context) {
+        Resources resources = context.getResources();
         mapFiles = new MapFile[] {
                 MapFile.load(
-                        resources,
+                        context,
                         R.raw.scom,
                         "scom",
                         "scom.mid",
                         DEFAULT_MAP_SEED,
                         3, //guitar channel
                         STRING_COUNT,
-                        0L
+                        0L,
+                        R.raw.msc_scom,
+                        R.raw.guitar_snd
                 )
         };
         gameEngine = new GameEngine(STRING_COUNT, mapFiles[0]);
@@ -50,10 +54,12 @@ public class GameState {
     }
 
     public synchronized void showMainMenu() {
+        gameEngine.stopMapAudio();
         currentScreen = ScreenState.MAIN_MENU;
     }
 
     public synchronized void showChooseSong() {
+        gameEngine.stopMapAudio();
         currentScreen = ScreenState.CHOOSE_SONG;
     }
 
@@ -66,6 +72,7 @@ public class GameState {
     public synchronized void startGame(int songIndex) {
         selectSong(songIndex);
         currentScreen = ScreenState.IN_GAME;
+        gameEngine.startMapAudio();
     }
 
     public synchronized ScreenState getCurrentScreen() {
@@ -118,6 +125,20 @@ public class GameState {
 
     public synchronized int getCurrentScore() {
         return (int) Math.round(gameEngine.getScore());
+    }
+
+    public synchronized void onAppResume() {
+        if (currentScreen == ScreenState.IN_GAME) {
+            gameEngine.startMapAudio();
+        }
+    }
+
+    public synchronized void onAppPause() {
+        gameEngine.stopMapAudio();
+    }
+
+    public synchronized void setHitSoundPitch(float pitch) {
+        gameEngine.setHitAudioPitch(pitch);
     }
 
     private boolean isValidSongIndex(int songIndex) {

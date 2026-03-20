@@ -9,10 +9,12 @@ public class GameEngine {
     private final StringRack stringRack;
     private final GameplaySession gameplaySession;
     private final CanvasGameRenderer canvasGameRenderer;
+    private final MapFile mapFile;
 
     private boolean wasInGame;
 
     public GameEngine(int stringCount, MapFile mapFile) {
+        this.mapFile = mapFile;
         stringRack = new StringRack(stringCount);
         gameplaySession = new GameplaySession(mapFile, stringCount);
         canvasGameRenderer = new CanvasGameRenderer();
@@ -56,6 +58,7 @@ public class GameEngine {
         }
 
         gameplaySession.registerStringHit(touchedStringIndex);
+        mapFile.playHitAudio();
         return true;
     }
 
@@ -100,5 +103,17 @@ public class GameEngine {
     public void resetRuntimeState() {
         gameplaySession.reset();
         stringRack.resetOscillations();
+    }
+
+    public void startMapAudio() {
+        mapFile.startBackgroundAudio();
+    }
+
+    public void stopMapAudio() {
+        mapFile.stopAllAudio();
+    }
+
+    public void setHitAudioPitch(float pitch) {
+        mapFile.setHitAudioPitch(pitch);
     }
 }

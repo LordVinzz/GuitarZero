@@ -64,6 +64,10 @@ public class MapFileTest {
                 TEST_CHANNEL_INDEX,
                 1,
                 0L,
+                0,
+                0,
+                null,
+                null,
                 midiBytes
         );
 
@@ -138,6 +142,10 @@ public class MapFileTest {
                 TEST_CHANNEL_INDEX,
                 TEST_STRING_COUNT,
                 0L,
+                0,
+                0,
+                null,
+                null,
                 Files.readAllBytes(resolveMidiPath())
         );
     }
