@@ -12,7 +12,6 @@ import com.example.guitarzero.engine.map.MapFile;
 public class GameState {
     public static final int STRING_COUNT = 4;
     private static final long DEFAULT_MAP_SEED = 42L;
-    private static final int DEFAULT_MIDI_CHANNEL_INDEX = 3;
 
     public enum ScreenState {
         IN_GAME,
@@ -34,7 +33,7 @@ public class GameState {
                         "scom",
                         "scom.mid",
                         DEFAULT_MAP_SEED,
-                        DEFAULT_MIDI_CHANNEL_INDEX,
+                        3, //guitar channel
                         STRING_COUNT,
                         0L
                 )
