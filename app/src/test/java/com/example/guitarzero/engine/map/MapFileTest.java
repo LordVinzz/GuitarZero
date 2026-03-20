@@ -33,6 +33,7 @@ public class MapFileTest {
             assertTrue(storedNote.getDurationMs() > 0L);
             assertTrue(storedNote.getStringIndex() >= 0);
             assertTrue(storedNote.getStringIndex() < TEST_STRING_COUNT);
+            assertTrue(storedNote.getMidiPitch() >= 0);
             assertTrue(storedNote.getAbsoluteTimeMs() >= lastAbsoluteTimeMs);
             lastAbsoluteTimeMs = storedNote.getAbsoluteTimeMs();
         }

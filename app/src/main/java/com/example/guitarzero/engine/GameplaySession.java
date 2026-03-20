@@ -66,7 +66,7 @@ public class GameplaySession {
         }
     }
 
-    public void registerStringHit(int stringIndex) {
+    public Note registerStringHit(int stringIndex) {
         Note bestNote = null;
         double bestScore = -1d;
 
@@ -84,7 +84,7 @@ public class GameplaySession {
 
         if (bestNote == null || bestScore <= 0d) {
             comboState.registerMiss();
-            return;
+            return null;
         }
 
         score += bestScore * comboState.getMultiplier();
@@ -93,6 +93,8 @@ public class GameplaySession {
         if (isPerfectScore(bestScore)) {
             comboState.registerPerfect();
         }
+
+        return bestNote;
     }
 
     public long getGameTimeMs() {

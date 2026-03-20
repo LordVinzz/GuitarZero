@@ -29,6 +29,11 @@ public class AudioPlayer {
         mediaPlayer.start();
     }
 
+    public void play(float pitch) {
+        this.pitch = pitch;
+        play();
+    }
+
     public void stop() {
         if (mediaPlayer != null) {
             mediaPlayer.stop();

@@ -57,8 +57,10 @@ public class GameEngine {
             return true;
         }
 
-        gameplaySession.registerStringHit(touchedStringIndex);
-        mapFile.playHitAudio();
+        Note hitNote = gameplaySession.registerStringHit(touchedStringIndex);
+        if (hitNote != null) {
+            mapFile.playHitAudio(hitNote);
+        }
         return true;
     }
 

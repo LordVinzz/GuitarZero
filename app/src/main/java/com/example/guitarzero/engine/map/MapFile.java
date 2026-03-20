@@ -50,11 +50,13 @@ public final class MapFile {
         private final long absoluteTimeMs;
         private final long durationMs;
         private final int stringIndex;
+        private final int midiPitch;
 
-        public StoredNote(long absoluteTimeMs, long durationMs, int stringIndex) {
+        public StoredNote(long absoluteTimeMs, long durationMs, int stringIndex, int midiPitch) {
             this.absoluteTimeMs = absoluteTimeMs;
             this.durationMs = durationMs;
             this.stringIndex = stringIndex;
+            this.midiPitch = midiPitch;
         }
 
         public long getAbsoluteTimeMs() {
@@ -68,6 +70,10 @@ public final class MapFile {
         public int getStringIndex() {
             return stringIndex;
         }
+
+        public int getMidiPitch() {
+            return midiPitch;
+        }
     }
 
     private final String id;
@@ -79,6 +85,7 @@ public final class MapFile {
     private final int hitAudioResId;
     private final AudioPlayer backgroundAudioPlayer;
     private final AudioPlayer hitAudioPlayer;
+    private float hitAudioLightPitchMultiplier = 1f;
     private final List<TempoChange> tempoChanges;
     private final List<StoredNote> storedNotes;
 
@@ -204,7 +211,12 @@ public final class MapFile {
             long absoluteTimeMs = Math.max(0L, parsedNote.getStartTimeMs() + timelineOffsetMs);
             long durationMs = Math.max(1L, parsedNote.getDurationMs());
             int stringIndex = random.nextInt(stringCount);
-            storedNotes.add(new StoredNote(absoluteTimeMs, durationMs, stringIndex));
+            storedNotes.add(new StoredNote(
+                    absoluteTimeMs,
+                    durationMs,
+                    stringIndex,
+                    parsedNote.getPitch()
+            ));
         }
         Collections.sort(storedNotes, new Comparator<StoredNote>() {
             @Override
@@ -246,7 +258,7 @@ public final class MapFile {
                     storedNote.getStringIndex(),
                     storedNote.getAbsoluteTimeMs(),
                     storedNote.getDurationMs(),
-                    0f
+                    computeSamplePitchMultiplier(storedNote.getMidiPitch())
             ));
         }
         return runtimeNotes;
@@ -317,9 +329,11 @@ public final class MapFile {
         }
     }
 
-    public void playHitAudio() {
+    public void playHitAudio(Note note) {
         if (hitAudioPlayer != null) {
-            hitAudioPlayer.play();
+            hitAudioPlayer.play(
+                    note.getSamplePitchMultiplier() * hitAudioLightPitchMultiplier
+            );
         }
     }
 
@@ -335,9 +349,7 @@ public final class MapFile {
     }
 
     public void setHitAudioPitch(float pitch) {
-        if (hitAudioPlayer != null) {
-            hitAudioPlayer.setPitch(pitch);
-        }
+        hitAudioLightPitchMultiplier = pitch;
     }
 
     private static byte[] readAllBytes(InputStream inputStream) throws IOException {
@@ -358,6 +370,10 @@ public final class MapFile {
         }
 
         return new AudioPlayer(context, resId);
+    }
+
+    private static float computeSamplePitchMultiplier(int midiPitch) {
+        return (float) Math.pow(2.0d, (midiPitch - 60) / 12.0d);
     }
 
     private static List<StoredNote> keepLongestSimultaneousNotesOnSameString(
