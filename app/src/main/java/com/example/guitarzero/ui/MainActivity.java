@@ -8,6 +8,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import com.example.guitarzero.R;
 import com.example.guitarzero.game.GameState;
@@ -15,12 +16,15 @@ import com.example.guitarzero.render.canvas.GameView;
 import com.example.guitarzero.render.opengl.RopeGLSurfaceView;
 
 public class MainActivity extends Activity {
+    private static final float NOTE_SLOW_ZONE_Y_NORMALIZED = 0.75f;
+
     private GameState gameState;
     private RopeGLSurfaceView ropeGLSurfaceView;
 
     private View mainMenuPanel;
     private View chooseSongPanel;
     private View inGameOverlay;
+    private ImageView slowZoneBarView;
     private android.widget.TextView mainMenuSelectedSongText;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
@@ -79,9 +83,20 @@ public class MainActivity extends Activity {
         mainMenuPanel = findViewById(R.id.main_menu_panel);
         chooseSongPanel = findViewById(R.id.choose_song_panel);
         inGameOverlay = findViewById(R.id.in_game_overlay);
+        slowZoneBarView = findViewById(R.id.image_slow_zone_bar);
         mainMenuSelectedSongText = findViewById(R.id.text_selected_song);
         openMainMenuButton = findViewById(R.id.button_open_main_menu);
         openMainMenuButton.setImageResource(R.drawable.ic_settings_overlay);
+        inGameOverlay.addOnLayoutChangeListener((view,
+                                                 left,
+                                                 top,
+                                                 right,
+                                                 bottom,
+                                                 oldLeft,
+                                                 oldTop,
+                                                 oldRight,
+                                                 oldBottom) -> updateSlowZoneBarPosition());
+        inGameOverlay.post(this::updateSlowZoneBarPosition);
 
         songButtons = new Button[] {
                 findViewById(R.id.button_song_0),
@@ -149,5 +164,20 @@ public class MainActivity extends Activity {
             }
             songButtons[i].setText(label);
         }
+    }
+
+    private void updateSlowZoneBarPosition() {
+        if (inGameOverlay == null || slowZoneBarView == null) {
+            return;
+        }
+
+        int overlayHeight = inGameOverlay.getHeight();
+        int barHeight = slowZoneBarView.getHeight();
+        if (overlayHeight <= 0 || barHeight <= 0) {
+            return;
+        }
+
+        float centeredY = (overlayHeight * NOTE_SLOW_ZONE_Y_NORMALIZED) - (barHeight / 2f);
+        slowZoneBarView.setY(centeredY);
     }
 }
