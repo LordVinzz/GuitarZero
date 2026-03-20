@@ -10,6 +10,7 @@ import android.opengl.Matrix;
 
 import com.example.guitarzero.R;
 import com.example.guitarzero.game.GameState;
+import com.example.guitarzero.game.GuitarString;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,25 +26,24 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
     private static final int STRIDE_BYTES =
             (POSITION_COMPONENT_COUNT + TEX_COORD_COMPONENT_COUNT) * FLOAT_SIZE_BYTES;
     private static final float FULL_SCREEN_HEIGHT_NDC = 2f;
-
-    private static final float[] VERTICES = {
-            -0.5f, -0.5f, 0f, 0f, 1f,
-             0.5f, -0.5f, 0f, 1f, 1f,
-            -0.5f,  0.5f, 0f, 0f, 0f,
-             0.5f,  0.5f, 0f, 1f, 0f
-    };
+    private static final int VERTICAL_SEGMENTS = 32;
 
     private final Context context;
     private final GameState gameState;
     private final ShaderPrograms shaderPrograms;
     private final FloatBuffer vertexBuffer;
     private final float[] mvpMatrix = new float[16];
+    private final int vertexCount;
 
     private int program;
     private int positionHandle;
     private int texCoordHandle;
     private int mvpMatrixHandle;
     private int textureHandle;
+    private int oscillationTimeHandle;
+    private int oscillationAmplitudeHandle;
+    private int oscillationAngularFrequencyHandle;
+    private int oscillationDampingHandle;
     private int textureId;
     private int viewWidth;
     private int viewHeight;
@@ -54,10 +54,12 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
         this.context = context;
         this.gameState = gameState;
         this.shaderPrograms = shaderPrograms;
-        vertexBuffer = ByteBuffer.allocateDirect(VERTICES.length * FLOAT_SIZE_BYTES)
+        float[] vertices = createVertices();
+        vertexCount = vertices.length / (POSITION_COMPONENT_COUNT + TEX_COORD_COMPONENT_COUNT);
+        vertexBuffer = ByteBuffer.allocateDirect(vertices.length * FLOAT_SIZE_BYTES)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        vertexBuffer.put(VERTICES).position(0);
+        vertexBuffer.put(vertices).position(0);
     }
 
     @Override
@@ -75,6 +77,13 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
         texCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord");
         mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMvpMatrix");
         textureHandle = GLES20.glGetUniformLocation(program, "uTexture");
+        oscillationTimeHandle = GLES20.glGetUniformLocation(program, "uOscillationTimeSeconds");
+        oscillationAmplitudeHandle = GLES20.glGetUniformLocation(program, "uOscillationAmplitude");
+        oscillationAngularFrequencyHandle = GLES20.glGetUniformLocation(
+                program,
+                "uOscillationAngularFrequency"
+        );
+        oscillationDampingHandle = GLES20.glGetUniformLocation(program, "uOscillationDamping");
         textureId = loadTexture(context);
     }
 
@@ -93,13 +102,12 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
             return;
         }
 
-        GameState.RopeRenderState renderState = gameState.getRopeRenderState();
-        if (!renderState.visible) {
+        GuitarString.RenderState[] renderStates = gameState.getGuitarStringRenderStates();
+        if (renderStates.length == 0) {
             return;
         }
 
         GLES20.glUseProgram(program);
-        updateMvpMatrix(renderState);
 
         vertexBuffer.position(0);
         GLES20.glVertexAttribPointer(
@@ -129,21 +137,47 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
         GLES20.glUniform1i(textureHandle, 0);
 
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        for (GuitarString.RenderState renderState : renderStates) {
+            if (!renderState.visible) {
+                continue;
+            }
+
+            float ropeHeightNdc = FULL_SCREEN_HEIGHT_NDC * renderState.scaleY;
+            float ropeWidthNdc = computeRopeWidthNdc(renderState, ropeHeightNdc);
+            updateMvpMatrix(renderState, ropeWidthNdc, ropeHeightNdc);
+            GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0);
+            GLES20.glUniform1f(oscillationTimeHandle, renderState.oscillationTimeSeconds);
+            GLES20.glUniform1f(oscillationAmplitudeHandle, renderState.displacementAmplitude);
+            GLES20.glUniform1f(
+                    oscillationAngularFrequencyHandle,
+                    renderState.oscillationAngularFrequency
+            );
+            GLES20.glUniform1f(oscillationDampingHandle, renderState.oscillationDamping);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, vertexCount);
+        }
     }
 
-    private void updateMvpMatrix(GameState.RopeRenderState renderState) {
-        Matrix.setIdentityM(mvpMatrix, 0);
-
-        float ndcHeight = FULL_SCREEN_HEIGHT_NDC * renderState.scaleY;
+    private float computeRopeWidthNdc(GuitarString.RenderState renderState, float ropeHeightNdc) {
         float imageAspect = (float) textureWidth / (float) textureHeight;
-        float ndcWidth = ndcHeight
+        return ropeHeightNdc
                 * imageAspect
                 * ((float) viewHeight / (float) viewWidth)
                 * renderState.scaleX;
+    }
 
-        Matrix.translateM(mvpMatrix, 0, renderState.translateX, renderState.translateY, 0f);
-        Matrix.scaleM(mvpMatrix, 0, ndcWidth, ndcHeight, 1f);
+    private void updateMvpMatrix(GuitarString.RenderState renderState, float ropeWidthNdc, float ropeHeightNdc) {
+        Matrix.setIdentityM(mvpMatrix, 0);
+
+        float ropeCenterX = (renderState.centerXNormalized * 2f) - 1f;
+
+        Matrix.translateM(
+                mvpMatrix,
+                0,
+                ropeCenterX,
+                0f,
+                0f
+        );
+        Matrix.scaleM(mvpMatrix, 0, ropeWidthNdc, ropeHeightNdc, 1f);
     }
 
     private int loadTexture(Context context) {
@@ -170,5 +204,30 @@ public class RopeRenderer implements GLSurfaceView.Renderer {
         bitmap.recycle();
 
         return generatedTextureId;
+    }
+
+    private float[] createVertices() {
+        int floatsPerVertex = POSITION_COMPONENT_COUNT + TEX_COORD_COMPONENT_COUNT;
+        float[] vertices = new float[(VERTICAL_SEGMENTS + 1) * 2 * floatsPerVertex];
+        int offset = 0;
+
+        for (int row = 0; row <= VERTICAL_SEGMENTS; row++) {
+            float t = row / (float) VERTICAL_SEGMENTS;
+            float y = 0.5f - t;
+
+            offset = writeVertex(vertices, offset, -0.5f, y, 0f, 0f, t);
+            offset = writeVertex(vertices, offset, 0.5f, y, 0f, 1f, t);
+        }
+
+        return vertices;
+    }
+
+    private int writeVertex(float[] vertices, int offset, float x, float y, float z, float u, float v) {
+        vertices[offset++] = x;
+        vertices[offset++] = y;
+        vertices[offset++] = z;
+        vertices[offset++] = u;
+        vertices[offset++] = v;
+        return offset;
     }
 }

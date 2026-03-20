@@ -3,25 +3,34 @@ package com.example.guitarzero;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.util.Log;
 
 public class Hitbox {
-    private int stringIndex;
+    private final int stringIndex;
     private final RectF rect;
-    private final Runnable onHit;
 
     public Hitbox(int stringIndex, float left, float top, float right, float bottom) {
         this.stringIndex = stringIndex;
         this.rect = new RectF(left, top, right, bottom);
-        this.onHit = () -> Log.d("Hitbox", "String " + stringIndex + " hit");
     }
 
-    public boolean handleTouch(float x, float y) {
-        if (rect.contains(x, y)) {
-            if (onHit != null) onHit.run();
-            return true;
-        }
-        return false;
+    public int getStringIndex() {
+        return stringIndex;
+    }
+
+    public void setBounds(float left, float top, float right, float bottom) {
+        rect.set(left, top, right, bottom);
+    }
+
+    public boolean contains(float x, float y) {
+        return rect.contains(x, y);
+    }
+
+    public float getCenterX() {
+        return rect.centerX();
+    }
+
+    public float getCenterY() {
+        return rect.centerY();
     }
 
     public void drawDebug(Canvas canvas, Paint paint) {

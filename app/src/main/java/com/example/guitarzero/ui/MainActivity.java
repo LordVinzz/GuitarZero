@@ -8,7 +8,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.TextView;
 
 import com.example.guitarzero.R;
 import com.example.guitarzero.game.GameState;
@@ -22,9 +21,7 @@ public class MainActivity extends Activity {
     private View mainMenuPanel;
     private View chooseSongPanel;
     private View inGameOverlay;
-    private TextView mainMenuSelectedSongText;
-    private TextView inGameSongText;
-    private TextView inGameLevelText;
+    private android.widget.TextView mainMenuSelectedSongText;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
 
@@ -51,9 +48,9 @@ public class MainActivity extends Activity {
         super.onResume();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onResume();
-            if (gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME) {
-                ropeGLSurfaceView.requestRender();
-            }
+            ropeGLSurfaceView.setInGameRendering(
+                    gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME
+            );
         }
     }
 
@@ -83,8 +80,6 @@ public class MainActivity extends Activity {
         chooseSongPanel = findViewById(R.id.choose_song_panel);
         inGameOverlay = findViewById(R.id.in_game_overlay);
         mainMenuSelectedSongText = findViewById(R.id.text_selected_song);
-        inGameSongText = findViewById(R.id.text_in_game_song);
-        inGameLevelText = findViewById(R.id.text_in_game_level);
         openMainMenuButton = findViewById(R.id.button_open_main_menu);
         openMainMenuButton.setImageResource(R.drawable.ic_settings_overlay);
 
@@ -138,21 +133,12 @@ public class MainActivity extends Activity {
         chooseSongPanel.setVisibility(isChooseSong ? View.VISIBLE : View.GONE);
         inGameOverlay.setVisibility(isInGame ? View.VISIBLE : View.GONE);
         ropeGLSurfaceView.setVisibility(isInGame ? View.VISIBLE : View.GONE);
-
-        if (isInGame) {
-            ropeGLSurfaceView.requestRender();
-        }
+        ropeGLSurfaceView.setInGameRendering(isInGame);
     }
 
     private void updateSongTexts() {
         mainMenuSelectedSongText.setText(
                 getString(R.string.selected_song_format, gameState.getCurrentSongLabel())
-        );
-        inGameSongText.setText(
-                getString(R.string.in_game_song_format, gameState.getCurrentSongLabel())
-        );
-        inGameLevelText.setText(
-                getString(R.string.in_game_level_format, gameState.getCurrentLevelLabel())
         );
 
         int selectedSongIndex = gameState.getSelectedSongIndex();

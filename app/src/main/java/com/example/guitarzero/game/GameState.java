@@ -2,45 +2,24 @@ package com.example.guitarzero.game;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameState {
+    public static final int STRING_COUNT = 4;
+
+    private static final float MAX_DELTA_TIME_SECONDS = 0.05f;
+
     public enum ScreenState {
         IN_GAME,
         MAIN_MENU,
         CHOOSE_SONG
     }
 
-    public static final class RopeRenderState {
-        public final boolean visible;
-        public final float translateX;
-        public final float translateY;
-        public final float scaleX;
-        public final float scaleY;
-
-        public RopeRenderState(
-                boolean visible,
-                float translateX,
-                float translateY,
-                float scaleX,
-                float scaleY
-        ) {
-            this.visible = visible;
-            this.translateX = translateX;
-            this.translateY = translateY;
-            this.scaleX = scaleX;
-            this.scaleY = scaleY;
-        }
-    }
-
-    private static final float MAX_DELTA_TIME_SECONDS = 0.05f;
-    private static final RopeRenderState HIDDEN_ROPE_RENDER_STATE =
-            new RopeRenderState(false, 0f, 0f, 1f, 1f);
-    private static final RopeRenderState IN_GAME_ROPE_RENDER_STATE =
-            new RopeRenderState(true, 0f, 0f, 0.25f, 1f);
-
     private final String[] songs = {"Fuzz Intro", "Velvet Riff", "Arcade Solo"};
     private final String[] levels = {"Niveau 1", "Niveau 2", "Niveau 3"};
+    private final List<GuitarString> guitarStrings = new ArrayList<GuitarString>(STRING_COUNT);
 
     private ScreenState currentScreen = ScreenState.MAIN_MENU;
     private int selectedSongIndex = 0;
@@ -48,6 +27,9 @@ public class GameState {
     private float elapsedInGameSeconds = 0f;
 
     public GameState() {
+        for (int stringIndex = 0; stringIndex < STRING_COUNT; stringIndex++) {
+            guitarStrings.add(new GuitarString(stringIndex));
+        }
     }
 
     public synchronized void update(float deltaTimeSeconds) {
@@ -55,6 +37,10 @@ public class GameState {
 
         if (currentScreen == ScreenState.IN_GAME) {
             elapsedInGameSeconds += clampedDeltaTime;
+
+            for (GuitarString guitarString : guitarStrings) {
+                guitarString.update(clampedDeltaTime);
+            }
         }
     }
 
@@ -69,10 +55,12 @@ public class GameState {
 
     public synchronized void showMainMenu() {
         currentScreen = ScreenState.MAIN_MENU;
+        resetStringOscillations();
     }
 
     public synchronized void showChooseSong() {
         currentScreen = ScreenState.CHOOSE_SONG;
+        resetStringOscillations();
     }
 
     public synchronized void selectSong(int songIndex) {
@@ -86,6 +74,7 @@ public class GameState {
 
         currentScreen = ScreenState.IN_GAME;
         elapsedInGameSeconds = 0f;
+        resetStringOscillations();
     }
 
     public synchronized ScreenState getCurrentScreen() {
@@ -116,15 +105,55 @@ public class GameState {
         return levels[currentLevelIndex];
     }
 
-    public synchronized RopeRenderState getRopeRenderState() {
-        if (currentScreen == ScreenState.IN_GAME) {
-            return IN_GAME_ROPE_RENDER_STATE;
+    public synchronized void setStringHitboxLayout(int surfaceWidth, int surfaceHeight) {
+        if (surfaceWidth <= 0 || surfaceHeight <= 0) {
+            return;
         }
 
-        return HIDDEN_ROPE_RENDER_STATE;
+        float hitboxWidth = surfaceWidth / (float) STRING_COUNT;
+        for (int stringIndex = 0; stringIndex < guitarStrings.size(); stringIndex++) {
+            float hitboxLeft = stringIndex * hitboxWidth;
+            float hitboxRight = hitboxLeft + hitboxWidth;
+            guitarStrings.get(stringIndex).setHitboxBounds(
+                    hitboxLeft,
+                    0f,
+                    hitboxRight,
+                    surfaceHeight,
+                    surfaceWidth
+            );
+        }
+    }
+
+    public synchronized int handleStringTouch(float touchX, float touchY) {
+        if (currentScreen != ScreenState.IN_GAME) {
+            return -1;
+        }
+
+        for (GuitarString guitarString : guitarStrings) {
+            if (guitarString.handleTouch(touchX, touchY)) {
+                return guitarString.getStringIndex();
+            }
+        }
+
+        return -1;
+    }
+
+    public synchronized GuitarString.RenderState[] getGuitarStringRenderStates() {
+        boolean visible = currentScreen == ScreenState.IN_GAME;
+        GuitarString.RenderState[] renderStates = new GuitarString.RenderState[guitarStrings.size()];
+        for (int stringIndex = 0; stringIndex < guitarStrings.size(); stringIndex++) {
+            renderStates[stringIndex] = guitarStrings.get(stringIndex).getRenderState(visible);
+        }
+        return renderStates;
     }
 
     private boolean isValidSongIndex(int songIndex) {
         return songIndex >= 0 && songIndex < songs.length;
+    }
+
+    private void resetStringOscillations() {
+        for (GuitarString guitarString : guitarStrings) {
+            guitarString.resetOscillation();
+        }
     }
 }

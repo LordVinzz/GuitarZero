@@ -21,4 +21,11 @@ public class RopeGLSurfaceView extends GLSurfaceView {
         ));
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
+
+    public void setInGameRendering(boolean enabled) {
+        setRenderMode(enabled ? GLSurfaceView.RENDERMODE_CONTINUOUSLY : GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        if (enabled) {
+            requestRender();
+        }
+    }
 }
