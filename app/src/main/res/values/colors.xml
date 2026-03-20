@@ -2,4 +2,9 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="menu_overlay_background">#F2FFFFFF</color>
+    <color name="menu_card_background">#FFFFFFFF</color>
+    <color name="menu_text_primary">#FF161616</color>
+    <color name="menu_text_secondary">#FF505050</color>
+    <color name="hud_bar_background">#E6FFFFFF</color>
 </resources>

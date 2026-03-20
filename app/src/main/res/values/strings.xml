@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">GuitarZero</string>
+    <string name="main_menu_title">Guitar Zero</string>
+    <string name="main_menu_play">Play</string>
+    <string name="main_menu_choose_song">Choose Song</string>
+    <string name="selected_song_format">Current song: %1$s</string>
+    <string name="choose_song_title">Choose Song</string>
+    <string name="choose_song_subtitle">Select a song to make it the current one.</string>
+    <string name="song_button_placeholder">Song</string>
+    <string name="back_button_label">Back</string>
+    <string name="menu_button_label">Menu</string>
+    <string name="in_game_song_format">Song: %1$s</string>
+    <string name="in_game_level_format">Level: %1$s</string>
 </resources>

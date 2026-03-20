@@ -1,5 +1,16 @@
 # Mini-jeu Android
 
+## Etat actuel du rendu
+- La structure `GameView` + `GameThread` est conservee comme couche `Canvas` de fond pour la scene du jeu.
+- `GameState` centralise la state machine (`MAIN_MENU`, `CHOOSE_SONG`, `IN_GAME`) ainsi que `update(deltaTime)` et `draw(Canvas)`.
+- Les menus sont maintenant des vues Android classiques en XML avec boutons, et non plus des textes dessines au `Canvas`.
+- La texture `corde.png` est rendue par OpenGL ES 2.0 avec des shaders charges depuis `res/raw`, dans des packages dedies au rendu.
+- La corde est statique et visible uniquement pendant `IN_GAME`.
+
+## Note
+- Les points numerotes ci-dessous conservent la trace du sujet PDF d'origine.
+- L'architecture actuelle du projet a ensuite ete refactorisee avec une UI XML, des packages groupes et un pipeline shader dedie.
+
 ## Prérequis
 - Installer la plateforme Android 27 dans le SDK local si elle n'est pas deja presente.
 - Exemple avec `sdkmanager`: `sdkmanager "platforms;android-27"`.
@@ -14,7 +25,7 @@ Le sujet demande de remplacer `AppCompatActivity` par `Activity`. `MainActivity`
 Le sujet demande d'ajouter le mode plein ecran et la suppression du titre avant l'affichage. `MainActivity` appelle maintenant `requestWindowFeature(Window.FEATURE_NO_TITLE)` et applique `FLAG_FULLSCREEN`, ce qui masque la barre de titre et la barre de statut.
 
 ## Point 4
-Le sujet demande de remplacer `setContentView` par `setContentView(new GameView(this))`. Le projet affiche desormais une instance de `GameView`, avec la valeur verticale calculee au lancement.
+Le sujet demande de remplacer `setContentView` par `setContentView(new GameView(this))`. Le projet conserve `GameView` comme couche `Canvas`, mais l'activite installe maintenant aussi un `RopeGLSurfaceView` au-dessus pour le rendu OpenGL ES de la corde.
 
 ## Point 5
 Le sujet demande une classe `GameView` qui etend `SurfaceView` et implemente `SurfaceHolder.Callback`. Cette classe a ete ajoutee dans le projet et sert de logique principale pour l'affichage du mini-jeu.
@@ -41,7 +52,7 @@ Le sujet demande d'ajouter la boucle de rendu avec verrouillage du `Canvas`. La 
 Le sujet demande d'ajouter les variables manquantes et un setter pour `running`. `GameThread` contient la variable booleenne `running` et expose `setRunning(boolean isRunning)`.
 
 ## Point 13
-Le sujet demande de creer une methode `update` dans `GameView`. Cette methode existe et avance la position horizontale du rectangle a chaque rafraichissement.
+Le sujet demande de creer une methode `update` dans `GameView`. Cette methode existe toujours, mais la version actuelle ne deplace plus le rectangle du sujet puisque l'affichage visible a ete remplace par la corde OpenGL.
 
 ## Point 14
 Le sujet demande de demarrer le thread lors de la creation de la surface. `surfaceCreated()` active maintenant `running` puis lance le `GameThread`.
@@ -59,13 +70,13 @@ Le sujet demande d'autoriser les evenements sur la `SurfaceView`. Le constructeu
 Le sujet demande de reexecuter le code actuel et d'expliquer ce qu'il fait. A ce stade, l'application fait tourner un thread de rendu sur une surface plein ecran, mais sans dessin visible tant que la methode `draw()` n'a pas encore ete specialisee.
 
 ## Point 19
-Le sujet demande d'ajouter un rectangle rouge sur fond blanc dans `draw()`. `GameView.draw()` efface maintenant le fond en blanc et dessine un rectangle rouge.
+Le sujet demande d'ajouter un rectangle rouge sur fond blanc dans `draw()`. Dans la version actuelle, `GameView.draw()` conserve seulement le fond blanc et la corde visible est rendue par la couche OpenGL ES transparente.
 
 ## Point 20
-Le sujet demande de deplacer le rectangle vers la droite a chaque `update`. La variable `x` est incrementee a chaque boucle et repart avec un modulo `300`, ce qui cree un mouvement horizontal continu.
+Le sujet demande de deplacer le rectangle vers la droite a chaque `update`. Cette animation du rectangle n'est plus affichee dans la version actuelle, car le rendu visible a ete remplace par la texture `corde.png`.
 
 ## Point 21
-Le sujet demande d'utiliser `SharedPreferences` pour faire varier `y` selon le nombre de lancements. `MainActivity` lit `valeur_y`, lui ajoute `100`, applique le modulo `400`, sauvegarde la nouvelle valeur et la transmet a `GameView`.
+Le sujet demande d'utiliser `SharedPreferences` pour faire varier `y` selon le nombre de lancements. Cette logique n'est plus utilisee dans la version actuelle, l'objectif etant maintenant d'afficher une corde via OpenGL ES au-dessus du canvas.
 
 ## Point 22
 Le sujet demande de limiter la boucle principale a environ 60 rafraichissements par seconde. `GameThread` ajoute un `Thread.sleep(16)` apres chaque iteration afin de reduire la consommation et de stabiliser la vitesse d'animation.

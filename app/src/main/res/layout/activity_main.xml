@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <FrameLayout
+        android:id="@+id/render_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <include layout="@layout/view_main_menu" />
+    <include layout="@layout/view_choose_song" />
+    <include layout="@layout/view_in_game_overlay" />
+
+</FrameLayout>

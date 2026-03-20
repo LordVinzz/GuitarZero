@@ -1,26 +1,21 @@
-package com.example.guitarzero;
+package com.example.guitarzero.render.canvas;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.example.guitarzero.game.GameState;
+
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
-    private static final int RECTANGLE_SIZE = 100;
-    private static final int X_MODULO = 300;
-
+    private final GameState gameState;
     private GameThread thread;
-    private int x = 0;
-    private final int y;
 
-    public GameView(Context context, int initialY) {
+    public GameView(Context context, GameState gameState) {
         super(context);
-        y = initialY;
+        this.gameState = gameState;
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
-        setFocusable(true);
     }
 
     @Override
@@ -61,8 +56,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         thread = null;
     }
 
-    public void update() {
-        x = (x + 1) % X_MODULO;
+    public void update(float deltaTimeSeconds) {
+        gameState.update(deltaTimeSeconds);
     }
 
     @Override
@@ -72,10 +67,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         super.draw(canvas);
-        canvas.drawColor(Color.WHITE);
-
-        Paint paint = new Paint();
-        paint.setColor(Color.rgb(250, 0, 0));
-        canvas.drawRect(x, y, x + RECTANGLE_SIZE, y + RECTANGLE_SIZE, paint);
+        gameState.draw(canvas);
     }
 }
