@@ -1,6 +1,7 @@
 package com.example.guitarzero.ui;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -163,6 +164,10 @@ public class MainActivity extends Activity {
             gameState.showChooseSong();
             refreshUiForState();
         });
+
+        findViewById(R.id.button_credits).setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, CreditsActivity.class))
+        );
 
         for (int i = 0; i < songButtons.length; i++) {
             final int songIndex = i;

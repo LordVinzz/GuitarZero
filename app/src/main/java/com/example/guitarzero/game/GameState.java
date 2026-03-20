@@ -34,7 +34,7 @@ public class GameState {
                         "scom",
                         "scom.mid",
                         DEFAULT_MAP_SEED,
-                        4,
+                        3,
                         STRING_COUNT,
                         0L,
                         R.raw.msc_scom,

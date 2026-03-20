@@ -3,6 +3,7 @@
     <string name="main_menu_title">Guitar Zero</string>
     <string name="main_menu_play">Play</string>
     <string name="main_menu_choose_song">Choose Song</string>
+    <string name="main_menu_credits">Credits</string>
     <string name="selected_song_format">Current song: %1$s</string>
     <string name="choose_song_title">Choose Song</string>
     <string name="choose_song_subtitle">Select a song to make it the current one.</string>
@@ -13,4 +14,13 @@
     <string name="score_overlay_format">Score: %1$d</string>
     <string name="in_game_song_format">Song: %1$s</string>
     <string name="in_game_level_format">Level: %1$s</string>
+    <string name="credits_title">Credits</string>
+    <string name="credits_subtitle">Project contributors</string>
+    <string name="credits_back">Back</string>
+    <string name="credits_loan_name">Loan Vigouroux</string>
+    <string name="credits_loan_url">https://github.com/Kitari31</string>
+    <string name="credits_vincent_name">Vincent Dominguez</string>
+    <string name="credits_vincent_url">https://github.com/LordVinzz</string>
+    <string name="credits_nabil_name">Nabil Zoubai</string>
+    <string name="credits_nabil_url">https://github.com/N4bil1</string>
 </resources>
