@@ -5,15 +5,13 @@ public class Note {
     public long absoluteTime;
     public long duration;
 
-    private float frequency; // frequency in Hertz
-    private static float frequencyMultiplier; // frequency multiplier based on light sensor
+    private final float samplePitchMultiplier;
 
-
-    public Note(int string, long absoluteTime, long duration, float frequency) {
+    public Note(int string, long absoluteTime, long duration, float samplePitchMultiplier) {
         this.string = string;
         this.absoluteTime = absoluteTime;
         this.duration = duration;
-        this.frequency = frequency;
+        this.samplePitchMultiplier = samplePitchMultiplier;
     }
 
     public double evalScore(long currentGameTimeMs) {
@@ -29,11 +27,7 @@ public class Note {
         return currentGameTimeMs > absoluteTime + (3 * duration) / 2;
     }
 
-    public float getCurrentFrequency() {
-        return frequency * frequencyMultiplier;
-    }
-
-    public static void setFrequencyMultiplier(float frequencyMultiplier) {
-        Note.frequencyMultiplier = frequencyMultiplier;
+    public float getSamplePitchMultiplier() {
+        return samplePitchMultiplier;
     }
 }

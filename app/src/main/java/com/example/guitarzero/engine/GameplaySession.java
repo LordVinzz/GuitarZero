@@ -1,56 +1,63 @@
 package com.example.guitarzero.engine;
 
+import com.example.guitarzero.engine.map.MapFile;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class GameplaySession {
     private static final float MAX_NOTE_SCORE = 1000f;
-    private static final long APPROACH_TIME_MS = 2000L;
+    public static final long APPROACH_TIME_MS = 2000L;
     private static final float NOTE_HIT_Y_NORMALIZED = 0.75f;
     private static final double PERFECT_SCORE_EPSILON = 0.001;
 
     public static final class NoteWaveState {
         public final int stringIndex;
-        public final float waveYNormalized;
+        public final float headYNormalized;
+        public final float tailYNormalized;
         public final float intensity;
 
-        public NoteWaveState(int stringIndex, float waveYNormalized, float intensity) {
+        public NoteWaveState(
+                int stringIndex,
+                float headYNormalized,
+                float tailYNormalized,
+                float intensity
+        ) {
             this.stringIndex = stringIndex;
-            this.waveYNormalized = waveYNormalized;
+            this.headYNormalized = headYNormalized;
+            this.tailYNormalized = tailYNormalized;
             this.intensity = intensity;
         }
     }
 
+    private MapFile mapFile;
     private final int stringCount;
     private final List<Note> notes = new ArrayList<Note>();
     private final ComboState comboState = new ComboState();
 
+    private long previewStartTimeMs;
     private long gameTimeMs;
     private double score;
 
-    public GameplaySession(int stringCount) {
+    public GameplaySession(MapFile mapFile, int stringCount) {
+        this.mapFile = mapFile;
         this.stringCount = stringCount;
         reset();
     }
 
+    public void setMapFile(MapFile mapFile) {
+        this.mapFile = mapFile;
+        reset();
+    }
+
     public void reset() {
-        gameTimeMs = 0L;
         score = 0d;
         comboState.reset();
         notes.clear();
-
-        for (int stringIndex = 0; stringIndex < stringCount; stringIndex++) {
-            notes.add(new Note(stringIndex, 2000L * (stringIndex + 1), 1000, 0));
-        }
-
-        for (int stringIndex = 0; stringIndex < stringCount; stringIndex++) {
-            notes.add(new Note(stringIndex, 8000 + 2000L * (stringIndex + 1), 1000, 0));
-        }
-
-        for (int stringIndex = 0; stringIndex < stringCount; stringIndex++) {
-            notes.add(new Note(stringIndex, 16000 + 2000L * (stringIndex + 1), 1000, 0));
-        }
+        notes.addAll(mapFile.createRuntimeNotes());
+        previewStartTimeMs = computePreviewStartTimeMs();
+        gameTimeMs = previewStartTimeMs;
     }
 
     public void update(float deltaTimeSeconds) {
@@ -66,7 +73,7 @@ public class GameplaySession {
         }
     }
 
-    public HitResult registerStringHit(int stringIndex) {
+    public HitResultData registerStringHit(int stringIndex) {
         Note bestNote = null;
         double bestScore = -1d;
 
@@ -89,16 +96,21 @@ public class GameplaySession {
         // Process hit result
         if (bestNote == null || bestScore <= 0d) {
             comboState.registerMiss();
-            return HitResult.MISS;
+            return new HitResultData(HitResult.MISS, null);
         } else if (isPerfectScore(bestScore)) {
             comboState.registerPerfect();
-            return HitResult.PERFECT;
-        } else return HitResult.GOOD;
-
+            return new HitResultData(HitResult.PERFECT, bestNote);
+        } else {
+            return new HitResultData(HitResult.GOOD, bestNote);
+        }
     }
 
     public long getGameTimeMs() {
         return gameTimeMs;
+    }
+
+    public long getPreviewStartTimeMs() {
+        return previewStartTimeMs;
     }
 
     public double getScore() {
@@ -115,6 +127,10 @@ public class GameplaySession {
 
     public int getComboTokens() {
         return comboState.getTokens();
+    }
+
+    public float getCurrentTempoBpm() {
+        return mapFile.getTempoBpmAtTimeMs(gameTimeMs);
     }
 
     public float[] getStringHighlightStrengths() {
@@ -145,26 +161,32 @@ public class GameplaySession {
     }
 
     private NoteWaveState createNoteWaveState(Note note) {
+        long travelDurationMs = Math.max(note.duration, 1L);
+        long noteOffTimeMs = note.absoluteTime + travelDurationMs;
         long visibleStartTimeMs = note.absoluteTime - APPROACH_TIME_MS;
-        long visibleEndTimeMs = note.absoluteTime + Math.max(note.duration, 1L);
+        long visibleEndTimeMs = noteOffTimeMs + travelDurationMs;
         if (gameTimeMs < visibleStartTimeMs || gameTimeMs > visibleEndTimeMs) {
             return null;
         }
 
-        float waveYNormalized;
-        if (gameTimeMs <= note.absoluteTime) {
+        float headYNormalized = computeEventYNormalized(note.absoluteTime, travelDurationMs);
+        float tailYNormalized = computeEventYNormalized(noteOffTimeMs, travelDurationMs);
+
+        return new NoteWaveState(note.string, headYNormalized, tailYNormalized, 1f);
+    }
+
+    private float computeEventYNormalized(long eventTimeMs, long travelDurationMs) {
+        long visibleStartTimeMs = eventTimeMs - APPROACH_TIME_MS;
+
+        if (gameTimeMs <= eventTimeMs) {
             float preHitProgress =
                     (gameTimeMs - visibleStartTimeMs) / (float) APPROACH_TIME_MS;
-            waveYNormalized = clamp(preHitProgress * NOTE_HIT_Y_NORMALIZED);
-        } else {
-            float postHitProgress =
-                    (gameTimeMs - note.absoluteTime) / (float) Math.max(note.duration, 1L);
-            waveYNormalized = clamp(
-                    NOTE_HIT_Y_NORMALIZED + (postHitProgress * (1f - NOTE_HIT_Y_NORMALIZED))
-            );
+            return clamp(preHitProgress * NOTE_HIT_Y_NORMALIZED);
         }
 
-        return new NoteWaveState(note.string, waveYNormalized, 1f);
+        float postHitProgress =
+                (gameTimeMs - eventTimeMs) / (float) Math.max(travelDurationMs, 1L);
+        return clamp(NOTE_HIT_Y_NORMALIZED + (postHitProgress * (1f - NOTE_HIT_Y_NORMALIZED)));
     }
 
     private float clamp(float value) {
@@ -173,5 +195,24 @@ public class GameplaySession {
 
     private boolean isPerfectScore(double scoreValue) {
         return scoreValue >= (MAX_NOTE_SCORE - PERFECT_SCORE_EPSILON);
+    }
+
+    private long computePreviewStartTimeMs() {
+        if (notes.isEmpty()) {
+            return 0L;
+        }
+
+        long earliestNoteTimeMs = Long.MAX_VALUE;
+        for (Note note : notes) {
+            if (note.absoluteTime < earliestNoteTimeMs) {
+                earliestNoteTimeMs = note.absoluteTime;
+            }
+        }
+
+        if (earliestNoteTimeMs == Long.MAX_VALUE) {
+            return 0L;
+        }
+
+        return Math.max(0L, earliestNoteTimeMs - APPROACH_TIME_MS);
     }
 }

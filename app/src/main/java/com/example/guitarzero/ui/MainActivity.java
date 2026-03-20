@@ -1,6 +1,7 @@
 package com.example.guitarzero.ui;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -8,27 +9,50 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.example.guitarzero.LightSensorManager;
 import com.example.guitarzero.R;
-import com.example.guitarzero.engine.AudioPlayer;
-import com.example.guitarzero.engine.Note;
 import com.example.guitarzero.game.GameState;
 import com.example.guitarzero.render.canvas.GameView;
 import com.example.guitarzero.render.opengl.RopeGLSurfaceView;
 
 public class MainActivity extends Activity {
+    private static final float NOTE_SLOW_ZONE_Y_NORMALIZED = 0.75f;
+
     private GameState gameState;
     private RopeGLSurfaceView ropeGLSurfaceView;
 
     private View mainMenuPanel;
     private View chooseSongPanel;
     private View inGameOverlay;
-    private android.widget.TextView mainMenuSelectedSongText;
+    private ImageView slowZoneBarView;
+    private TextView mainMenuSelectedSongText;
+    private TextView scoreTextView;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
-    private AudioPlayer player;
     private LightSensorManager lightSensorManager;
+    private final Runnable scoreOverlayUpdater = new Runnable() {
+        @Override
+        public void run() {
+            if (scoreTextView == null || gameState == null) {
+                return;
+            }
+
+            if (gameState.isCountdownActive()) {
+                scoreTextView.setText(gameState.getCountdownLabel());
+            } else {
+                scoreTextView.setText(
+                        getString(R.string.score_overlay_format, gameState.getCurrentScore())
+                );
+            }
+
+            if (gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME) {
+                scoreTextView.postDelayed(this, 33L);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,16 +64,17 @@ public class MainActivity extends Activity {
         );
 
         setContentView(R.layout.activity_main);
-        gameState = new GameState();
-        // init audio play, TODO: pick which mp3 to play here
-        player = new AudioPlayer(this, R.raw.test);
-        // init light sensor
+        gameState = new GameState(this);
         lightSensorManager = new LightSensorManager(this, lux -> {
-            float multiplier; // ad-hoc
-            if (lux < 10) multiplier = 0.5f; // very dark light (finger on sensor)
-            else if (lux < 1000) multiplier = 1.0f; // normal light
-            else multiplier = 2.0f; // sunlight
-            player.setPitch(multiplier);
+            float multiplier;
+            if (lux < 10f) {
+                multiplier = 0.5f;
+            } else if (lux < 1000f) {
+                multiplier = 1.0f;
+            } else {
+                multiplier = 2.0f;
+            }
+            gameState.setHitSoundPitch(multiplier);
         });
 
         setupRenderViews();
@@ -61,24 +86,32 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        player.play();
-        lightSensorManager.register();
+        if (lightSensorManager != null) {
+            lightSensorManager.register();
+        }
+        gameState.onAppResume();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onResume();
             ropeGLSurfaceView.setInGameRendering(
                     gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME
             );
         }
+        if (gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME) {
+            startScoreOverlayUpdates();
+        }
     }
 
     @Override
     protected void onPause() {
-        super.onPause();
-        lightSensorManager.unregister();
-        player.stop();
+        stopScoreOverlayUpdates();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onPause();
         }
+        if (lightSensorManager != null) {
+            lightSensorManager.unregister();
+        }
+        gameState.onAppPause();
+        super.onPause();
     }
 
     private void setupRenderViews() {
@@ -98,11 +131,23 @@ public class MainActivity extends Activity {
         mainMenuPanel = findViewById(R.id.main_menu_panel);
         chooseSongPanel = findViewById(R.id.choose_song_panel);
         inGameOverlay = findViewById(R.id.in_game_overlay);
+        slowZoneBarView = findViewById(R.id.image_slow_zone_bar);
         mainMenuSelectedSongText = findViewById(R.id.text_selected_song);
+        scoreTextView = findViewById(R.id.text_score_overlay);
         openMainMenuButton = findViewById(R.id.button_open_main_menu);
         openMainMenuButton.setImageResource(R.drawable.ic_settings_overlay);
+        inGameOverlay.addOnLayoutChangeListener((view,
+                left,
+                top,
+                right,
+                bottom,
+                oldLeft,
+                oldTop,
+                oldRight,
+                oldBottom) -> updateSlowZoneBarPosition());
+        inGameOverlay.post(this::updateSlowZoneBarPosition);
 
-        songButtons = new Button[]{
+        songButtons = new Button[] {
                 findViewById(R.id.button_song_0),
                 findViewById(R.id.button_song_1),
                 findViewById(R.id.button_song_2)
@@ -119,6 +164,10 @@ public class MainActivity extends Activity {
             gameState.showChooseSong();
             refreshUiForState();
         });
+
+        findViewById(R.id.button_credits).setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, CreditsActivity.class))
+        );
 
         for (int i = 0; i < songButtons.length; i++) {
             final int songIndex = i;
@@ -153,6 +202,13 @@ public class MainActivity extends Activity {
         inGameOverlay.setVisibility(isInGame ? View.VISIBLE : View.GONE);
         ropeGLSurfaceView.setVisibility(isInGame ? View.VISIBLE : View.GONE);
         ropeGLSurfaceView.setInGameRendering(isInGame);
+
+        if (isInGame) {
+            startScoreOverlayUpdates();
+            updateSlowZoneBarPosition();
+        } else {
+            stopScoreOverlayUpdates();
+        }
     }
 
     private void updateSongTexts() {
@@ -160,13 +216,52 @@ public class MainActivity extends Activity {
                 getString(R.string.selected_song_format, gameState.getCurrentSongLabel())
         );
 
+        int songCount = gameState.getSongCount();
         int selectedSongIndex = gameState.getSelectedSongIndex();
         for (int i = 0; i < songButtons.length; i++) {
+            if (i >= songCount) {
+                songButtons[i].setVisibility(View.GONE);
+                continue;
+            }
+
+            songButtons[i].setVisibility(View.VISIBLE);
             String label = gameState.getSongLabel(i);
             if (i == selectedSongIndex) {
                 label = label + " (selected)";
             }
             songButtons[i].setText(label);
         }
+    }
+
+    private void startScoreOverlayUpdates() {
+        if (scoreTextView == null) {
+            return;
+        }
+
+        scoreTextView.removeCallbacks(scoreOverlayUpdater);
+        scoreOverlayUpdater.run();
+    }
+
+    private void stopScoreOverlayUpdates() {
+        if (scoreTextView == null) {
+            return;
+        }
+
+        scoreTextView.removeCallbacks(scoreOverlayUpdater);
+    }
+
+    private void updateSlowZoneBarPosition() {
+        if (inGameOverlay == null || slowZoneBarView == null) {
+            return;
+        }
+
+        int overlayHeight = inGameOverlay.getHeight();
+        int barHeight = slowZoneBarView.getHeight();
+        if (overlayHeight <= 0 || barHeight <= 0) {
+            return;
+        }
+
+        float centeredY = (overlayHeight * NOTE_SLOW_ZONE_Y_NORMALIZED) - (barHeight / 2f);
+        slowZoneBarView.setY(centeredY);
     }
 }

@@ -3,16 +3,26 @@ package com.example.guitarzero.engine;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 
+import com.example.guitarzero.engine.map.MapFile;
+
 public class GameEngine {
+    private static final float COUNTDOWN_STEP_DURATION_MS = 1000f;
+    private static final float COUNTDOWN_TOTAL_DURATION_MS = 4000f;
+
     private final StringRack stringRack;
     private final GameplaySession gameplaySession;
     private final CanvasGameRenderer canvasGameRenderer;
+    private MapFile mapFile;
 
     private boolean wasInGame;
+    private float countdownRemainingMs;
+    private boolean backgroundAudioStarted;
+    private float hitAudioPitchMultiplier = 1f;
 
-    public GameEngine(int stringCount) {
+    public GameEngine(int stringCount, MapFile mapFile) {
+        this.mapFile = mapFile;
         stringRack = new StringRack(stringCount);
-        gameplaySession = new GameplaySession(stringCount);
+        gameplaySession = new GameplaySession(mapFile, stringCount);
         canvasGameRenderer = new CanvasGameRenderer();
     }
 
@@ -26,8 +36,12 @@ public class GameEngine {
         }
 
         if (!wasInGame) {
-            resetRuntimeState();
-            wasInGame = true;
+            beginGameplay();
+        }
+
+        if (countdownRemainingMs > 0f) {
+            updateCountdown(deltaTimeSeconds);
+            return;
         }
 
         stringRack.update(deltaTimeSeconds);
@@ -48,18 +62,29 @@ public class GameEngine {
             return false;
         }
 
+        if (countdownRemainingMs > 0f) {
+            return true;
+        }
+
         int touchedStringIndex = stringRack.handleTouch(touchX, touchY);
         if (touchedStringIndex < 0) {
             return true;
         }
 
-        HitResult hitResult = gameplaySession.registerStringHit(touchedStringIndex);
-        canvasGameRenderer.showHitResult(hitResult);
+        HitResultData hitResultData = gameplaySession.registerStringHit(touchedStringIndex);
+        canvasGameRenderer.showHitResult(hitResultData.result);
+        if (hitResultData.note != null) {
+            mapFile.playHitAudio(hitResultData.note);
+        }
         return true;
     }
 
     public void draw(Canvas canvas, boolean inGame) {
         canvasGameRenderer.draw(canvas, inGame, gameplaySession);
+    }
+
+    public double getScore() {
+        return gameplaySession.getScore();
     }
 
     public GuitarString.RenderState[] getGuitarStringRenderStates(boolean visible) {
@@ -83,7 +108,8 @@ public class GameEngine {
                     waveState.stringIndex,
                     stringRack.getCenterXNormalized(waveState.stringIndex),
                     laneWidthNormalized,
-                    waveState.waveYNormalized,
+                    waveState.headYNormalized,
+                    waveState.tailYNormalized,
                     waveState.intensity
             );
         }
@@ -94,5 +120,77 @@ public class GameEngine {
     public void resetRuntimeState() {
         gameplaySession.reset();
         stringRack.resetOscillations();
+        countdownRemainingMs = COUNTDOWN_TOTAL_DURATION_MS;
+        backgroundAudioStarted = false;
+    }
+
+    public void beginGameplay() {
+        resetRuntimeState();
+        wasInGame = true;
+    }
+
+    public void setMapFile(MapFile mapFile) {
+        if (this.mapFile == mapFile) {
+            mapFile.setHitAudioPitch(hitAudioPitchMultiplier);
+            return;
+        }
+
+        stopMapAudio();
+        this.mapFile = mapFile;
+        this.mapFile.setHitAudioPitch(hitAudioPitchMultiplier);
+        gameplaySession.setMapFile(mapFile);
+        stringRack.resetOscillations();
+        countdownRemainingMs = 0f;
+    }
+
+    public void startMapAudio() {
+        if (backgroundAudioStarted) {
+            return;
+        }
+
+        mapFile.startBackgroundAudio(gameplaySession.getPreviewStartTimeMs());
+        backgroundAudioStarted = true;
+    }
+
+    public void stopMapAudio() {
+        mapFile.stopAllAudio();
+        backgroundAudioStarted = false;
+    }
+
+    public void setHitAudioPitch(float pitch) {
+        hitAudioPitchMultiplier = pitch;
+        mapFile.setHitAudioPitch(pitch);
+    }
+
+    public boolean isCountdownActive() {
+        return countdownRemainingMs > 0f;
+    }
+
+    public String getCountdownLabel() {
+        if (!isCountdownActive()) {
+            return "";
+        }
+
+        if (countdownRemainingMs > (COUNTDOWN_STEP_DURATION_MS * 3f)) {
+            return "3";
+        }
+        if (countdownRemainingMs > (COUNTDOWN_STEP_DURATION_MS * 2f)) {
+            return "2";
+        }
+        if (countdownRemainingMs > COUNTDOWN_STEP_DURATION_MS) {
+            return "1";
+        }
+        return "GO";
+    }
+
+    private void updateCountdown(float deltaTimeSeconds) {
+        countdownRemainingMs = Math.max(
+                0f,
+                countdownRemainingMs - (deltaTimeSeconds * 1000f)
+        );
+
+        if (countdownRemainingMs <= 0f) {
+            startMapAudio();
+        }
     }
 }
