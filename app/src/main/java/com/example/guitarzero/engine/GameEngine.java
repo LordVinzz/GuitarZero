@@ -87,6 +87,14 @@ public class GameEngine {
         return gameplaySession.getScore();
     }
 
+    public HitResult getVisibleHitResult() {
+        return canvasGameRenderer.getVisibleHitResult();
+    }
+
+    public float getVisibleHitResultAlpha() {
+        return canvasGameRenderer.getVisibleHitResultAlpha();
+    }
+
     public GuitarString.RenderState[] getGuitarStringRenderStates(boolean visible) {
         float[] highlightStrengths = visible ? gameplaySession.getStringHighlightStrengths() : null;
         int comboTokens = visible ? gameplaySession.getComboTokens() : 0;

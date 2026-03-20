@@ -3,6 +3,7 @@ package com.example.guitarzero.ui;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -15,6 +16,7 @@ import android.widget.TextView;
 import com.example.guitarzero.LightSensorManager;
 import com.example.guitarzero.R;
 import com.example.guitarzero.game.GameState;
+import com.example.guitarzero.engine.HitResult;
 import com.example.guitarzero.render.canvas.GameView;
 import com.example.guitarzero.render.opengl.RopeGLSurfaceView;
 
@@ -30,6 +32,7 @@ public class MainActivity extends Activity {
     private ImageView slowZoneBarView;
     private TextView mainMenuSelectedSongText;
     private TextView scoreTextView;
+    private TextView hitResultTextView;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
     private LightSensorManager lightSensorManager;
@@ -47,6 +50,8 @@ public class MainActivity extends Activity {
                         getString(R.string.score_overlay_format, gameState.getCurrentScore())
                 );
             }
+
+            updateHitResultOverlay();
 
             if (gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME) {
                 scoreTextView.postDelayed(this, 33L);
@@ -134,6 +139,7 @@ public class MainActivity extends Activity {
         slowZoneBarView = findViewById(R.id.image_slow_zone_bar);
         mainMenuSelectedSongText = findViewById(R.id.text_selected_song);
         scoreTextView = findViewById(R.id.text_score_overlay);
+        hitResultTextView = findViewById(R.id.text_hit_result_overlay);
         openMainMenuButton = findViewById(R.id.button_open_main_menu);
         openMainMenuButton.setImageResource(R.drawable.ic_settings_overlay);
         inGameOverlay.addOnLayoutChangeListener((view,
@@ -208,6 +214,9 @@ public class MainActivity extends Activity {
             updateSlowZoneBarPosition();
         } else {
             stopScoreOverlayUpdates();
+            if (hitResultTextView != null) {
+                hitResultTextView.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -248,6 +257,42 @@ public class MainActivity extends Activity {
         }
 
         scoreTextView.removeCallbacks(scoreOverlayUpdater);
+    }
+
+    private void updateHitResultOverlay() {
+        if (hitResultTextView == null || gameState == null) {
+            return;
+        }
+
+        HitResult hitResult = gameState.getVisibleHitResult();
+        if (hitResult == null) {
+            hitResultTextView.setVisibility(View.GONE);
+            return;
+        }
+
+        hitResultTextView.setVisibility(View.VISIBLE);
+        hitResultTextView.setAlpha(gameState.getVisibleHitResultAlpha());
+
+        switch (hitResult) {
+            case PERFECT:
+                hitResultTextView.setText("PERFECT");
+                hitResultTextView.setTextSize(50f);
+                hitResultTextView.setTextColor(Color.rgb(255, 223, 0));
+                hitResultTextView.setShadowLayer(20f, 0f, 0f, Color.argb(220, 255, 200, 0));
+                break;
+            case GOOD:
+                hitResultTextView.setText("GOOD");
+                hitResultTextView.setTextSize(46f);
+                hitResultTextView.setTextColor(Color.rgb(100, 220, 255));
+                hitResultTextView.setShadowLayer(16f, 0f, 0f, Color.argb(200, 50, 180, 255));
+                break;
+            case MISS:
+                hitResultTextView.setText("MISS");
+                hitResultTextView.setTextSize(46f);
+                hitResultTextView.setTextColor(Color.rgb(255, 80, 80));
+                hitResultTextView.setShadowLayer(16f, 0f, 0f, Color.argb(200, 200, 0, 0));
+                break;
+        }
     }
 
     private void updateSlowZoneBarPosition() {
