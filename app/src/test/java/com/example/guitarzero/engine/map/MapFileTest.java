@@ -1,6 +1,5 @@
 package com.example.guitarzero.engine.map;
 
-import com.example.guitarzero.engine.GameplaySession;
 import com.example.guitarzero.engine.Note;
 
 import org.junit.Test;
@@ -40,6 +39,40 @@ public class MapFileTest {
     }
 
     @Test
+    public void simultaneousNotesOnSameStringKeepOnlyLongestOne() {
+        byte[] midiBytes = new byte[] {
+                'M', 'T', 'h', 'd',
+                0x00, 0x00, 0x00, 0x06,
+                0x00, 0x00,
+                0x00, 0x01,
+                0x01, (byte) 0xE0,
+                'M', 'T', 'r', 'k',
+                0x00, 0x00, 0x00, 0x1B,
+                0x00, (byte) 0xFF, 0x51, 0x03, 0x07, (byte) 0xA1, 0x20,
+                0x00, (byte) 0x94, 0x3C, 0x64,
+                0x00, 0x40, 0x64,
+                (byte) 0x81, 0x70, (byte) 0x84, 0x3C, 0x00,
+                0x78, (byte) 0x84, 0x40, 0x00,
+                0x00, (byte) 0xFF, 0x2F, 0x00
+        };
+
+        MapFile mapFile = MapFile.fromMidiBytes(
+                "simultaneous",
+                "simultaneous.mid",
+                42L,
+                0,
+                TEST_CHANNEL_INDEX,
+                1,
+                0L,
+                midiBytes
+        );
+
+        List<MapFile.StoredNote> storedNotes = mapFile.getStoredNotes();
+        assertEquals(1, storedNotes.size());
+        assertEquals(375L, storedNotes.get(0).getDurationMs());
+    }
+
+    @Test
     public void mapFileSeedKeepsStringPlacementDeterministic() throws IOException {
         MapFile firstMap = createMapFile(42L);
         MapFile secondMap = createMapFile(42L);
@@ -50,21 +83,32 @@ public class MapFileTest {
         List<MapFile.StoredNote> differentSeedNotes = differentSeedMap.getStoredNotes();
 
         assertEquals(firstNotes.size(), secondNotes.size());
-        assertEquals(firstNotes.size(), differentSeedNotes.size());
 
         boolean foundDifferentString = false;
         for (int index = 0; index < firstNotes.size(); index++) {
             MapFile.StoredNote firstNote = firstNotes.get(index);
             MapFile.StoredNote secondNote = secondNotes.get(index);
-            MapFile.StoredNote differentSeedNote = differentSeedNotes.get(index);
 
             assertEquals(firstNote.getAbsoluteTimeMs(), secondNote.getAbsoluteTimeMs());
             assertEquals(firstNote.getDurationMs(), secondNote.getDurationMs());
             assertEquals(firstNote.getStringIndex(), secondNote.getStringIndex());
+        }
 
-            if (firstNote.getStringIndex() != differentSeedNote.getStringIndex()) {
+        int comparableCount = Math.min(firstNotes.size(), differentSeedNotes.size());
+        for (int index = 0; index < comparableCount; index++) {
+            MapFile.StoredNote firstNote = firstNotes.get(index);
+            MapFile.StoredNote differentSeedNote = differentSeedNotes.get(index);
+
+            if (firstNote.getAbsoluteTimeMs() != differentSeedNote.getAbsoluteTimeMs()
+                    || firstNote.getDurationMs() != differentSeedNote.getDurationMs()
+                    || firstNote.getStringIndex() != differentSeedNote.getStringIndex()) {
                 foundDifferentString = true;
+                break;
             }
+        }
+
+        if (firstNotes.size() != differentSeedNotes.size()) {
+            foundDifferentString = true;
         }
 
         assertTrue(foundDifferentString);

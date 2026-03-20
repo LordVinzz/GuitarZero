@@ -9,6 +9,8 @@
     <string name="song_button_placeholder">Song</string>
     <string name="back_button_label">Back</string>
     <string name="menu_button_label">Menu</string>
+    <string name="score_overlay_placeholder">Score: 0</string>
+    <string name="score_overlay_format">Score: %1$d</string>
     <string name="in_game_song_format">Song: %1$s</string>
     <string name="in_game_level_format">Level: %1$s</string>
 </resources>

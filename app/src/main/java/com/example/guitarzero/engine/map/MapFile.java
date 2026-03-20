@@ -154,7 +154,11 @@ public final class MapFile {
                 if (startCompare != 0) {
                     return startCompare;
                 }
-                return Long.compare(left.getDurationMs(), right.getDurationMs());
+                int durationCompare = Long.compare(right.getDurationMs(), left.getDurationMs());
+                if (durationCompare != 0) {
+                    return durationCompare;
+                }
+                return Integer.compare(left.getPitch(), right.getPitch());
             }
         });
 
@@ -176,6 +180,23 @@ public final class MapFile {
             int stringIndex = random.nextInt(stringCount);
             storedNotes.add(new StoredNote(absoluteTimeMs, durationMs, stringIndex));
         }
+        Collections.sort(storedNotes, new Comparator<StoredNote>() {
+            @Override
+            public int compare(StoredNote left, StoredNote right) {
+                int timeCompare = Long.compare(left.getAbsoluteTimeMs(), right.getAbsoluteTimeMs());
+                if (timeCompare != 0) {
+                    return timeCompare;
+                }
+
+                int stringCompare = Integer.compare(left.getStringIndex(), right.getStringIndex());
+                if (stringCompare != 0) {
+                    return stringCompare;
+                }
+
+                return Long.compare(right.getDurationMs(), left.getDurationMs());
+            }
+        });
+        storedNotes = keepLongestSimultaneousNotesOnSameString(storedNotes);
 
         return new MapFile(
                 id,
@@ -255,5 +276,29 @@ public final class MapFile {
         }
 
         return outputStream.toByteArray();
+    }
+
+    private static List<StoredNote> keepLongestSimultaneousNotesOnSameString(
+            List<StoredNote> storedNotes
+    ) {
+        List<StoredNote> filteredNotes = new ArrayList<StoredNote>(storedNotes.size());
+
+        for (StoredNote storedNote : storedNotes) {
+            int lastIndex = filteredNotes.size() - 1;
+            if (lastIndex >= 0) {
+                StoredNote previousNote = filteredNotes.get(lastIndex);
+                if (previousNote.getAbsoluteTimeMs() == storedNote.getAbsoluteTimeMs()
+                        && previousNote.getStringIndex() == storedNote.getStringIndex()) {
+                    if (storedNote.getDurationMs() > previousNote.getDurationMs()) {
+                        filteredNotes.set(lastIndex, storedNote);
+                    }
+                    continue;
+                }
+            }
+
+            filteredNotes.add(storedNote);
+        }
+
+        return filteredNotes;
     }
 }

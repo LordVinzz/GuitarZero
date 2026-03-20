@@ -8,6 +8,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import com.example.guitarzero.R;
 import com.example.guitarzero.game.GameState;
@@ -21,9 +22,26 @@ public class MainActivity extends Activity {
     private View mainMenuPanel;
     private View chooseSongPanel;
     private View inGameOverlay;
-    private android.widget.TextView mainMenuSelectedSongText;
+    private TextView mainMenuSelectedSongText;
+    private TextView scoreTextView;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
+    private final Runnable scoreOverlayUpdater = new Runnable() {
+        @Override
+        public void run() {
+            if (scoreTextView == null || gameState == null) {
+                return;
+            }
+
+            scoreTextView.setText(
+                    getString(R.string.score_overlay_format, gameState.getCurrentScore())
+            );
+
+            if (gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME) {
+                scoreTextView.postDelayed(this, 33L);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +70,14 @@ public class MainActivity extends Activity {
                     gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME
             );
         }
+        if (gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME) {
+            startScoreOverlayUpdates();
+        }
     }
 
     @Override
     protected void onPause() {
+        stopScoreOverlayUpdates();
         if (ropeGLSurfaceView != null) {
             ropeGLSurfaceView.onPause();
         }
@@ -80,6 +102,7 @@ public class MainActivity extends Activity {
         chooseSongPanel = findViewById(R.id.choose_song_panel);
         inGameOverlay = findViewById(R.id.in_game_overlay);
         mainMenuSelectedSongText = findViewById(R.id.text_selected_song);
+        scoreTextView = findViewById(R.id.text_score_overlay);
         openMainMenuButton = findViewById(R.id.button_open_main_menu);
         openMainMenuButton.setImageResource(R.drawable.ic_settings_overlay);
 
@@ -134,6 +157,12 @@ public class MainActivity extends Activity {
         inGameOverlay.setVisibility(isInGame ? View.VISIBLE : View.GONE);
         ropeGLSurfaceView.setVisibility(isInGame ? View.VISIBLE : View.GONE);
         ropeGLSurfaceView.setInGameRendering(isInGame);
+
+        if (isInGame) {
+            startScoreOverlayUpdates();
+        } else {
+            stopScoreOverlayUpdates();
+        }
     }
 
     private void updateSongTexts() {
@@ -156,5 +185,22 @@ public class MainActivity extends Activity {
             }
             songButtons[i].setText(label);
         }
+    }
+
+    private void startScoreOverlayUpdates() {
+        if (scoreTextView == null) {
+            return;
+        }
+
+        scoreTextView.removeCallbacks(scoreOverlayUpdater);
+        scoreOverlayUpdater.run();
+    }
+
+    private void stopScoreOverlayUpdates() {
+        if (scoreTextView == null) {
+            return;
+        }
+
+        scoreTextView.removeCallbacks(scoreOverlayUpdater);
     }
 }

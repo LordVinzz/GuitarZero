@@ -5,6 +5,31 @@
     android:layout_height="match_parent"
     android:visibility="gone">
 
+    <ImageView
+        android:id="@+id/image_score_panel"
+        android:layout_width="match_parent"
+        android:layout_height="260dp"
+        android:layout_gravity="top"
+        android:adjustViewBounds="false"
+        android:contentDescription="@null"
+        android:scaleType="fitXY"
+        android:src="@drawable/score_pannel" />
+
+    <TextView
+        android:id="@+id/text_score_overlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="130dp"
+        android:shadowColor="#80000000"
+        android:shadowDx="0"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:text="@string/score_overlay_placeholder"
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
     <ImageButton
         android:id="@+id/button_open_main_menu"
         android:layout_width="128px"

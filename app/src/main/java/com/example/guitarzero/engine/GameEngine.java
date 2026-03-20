@@ -63,6 +63,10 @@ public class GameEngine {
         canvasGameRenderer.draw(canvas, inGame, gameplaySession);
     }
 
+    public double getScore() {
+        return gameplaySession.getScore();
+    }
+
     public GuitarString.RenderState[] getGuitarStringRenderStates(boolean visible) {
         float[] highlightStrengths = visible ? gameplaySession.getStringHighlightStrengths() : null;
         int comboTokens = visible ? gameplaySession.getComboTokens() : 0;

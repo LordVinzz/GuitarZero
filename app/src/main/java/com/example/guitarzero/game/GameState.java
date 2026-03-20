@@ -116,6 +116,10 @@ public class GameState {
         return gameEngine.getNoteWaveRenderStates(currentScreen == ScreenState.IN_GAME);
     }
 
+    public synchronized int getCurrentScore() {
+        return (int) Math.round(gameEngine.getScore());
+    }
+
     private boolean isValidSongIndex(int songIndex) {
         return songIndex >= 0 && songIndex < mapFiles.length;
     }
