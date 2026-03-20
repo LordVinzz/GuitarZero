@@ -1,6 +1,8 @@
 package com.example.guitarzero;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -26,6 +28,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private List<Note> notes = new ArrayList<>();
     private double score = 0;
 
+    private Bitmap backgroundBitmap;
+    private List<Hitbox> hitboxes = new ArrayList<>();
+
+
     public GameView(Context context, int initialY) {
         super(context);
         y = initialY;
@@ -43,8 +49,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
     }
 
+    private void initBackground() {
+        backgroundBitmap = Bitmap.createScaledBitmap(
+                BitmapFactory.decodeResource(getResources(), R.drawable.background),
+                getWidth(),
+                getHeight(),
+                true
+        );
+    }
+
+    private void initHitboxes() {
+        // Add hitboxes
+        final float hitboxWidth = getWidth() / 4f;
+        final float hitboxHeight = getHeight();
+
+        hitboxes.add(new Hitbox(0, 0, 0, hitboxWidth, hitboxHeight));
+        hitboxes.add(new Hitbox(1, hitboxWidth, 0, hitboxWidth * 2, hitboxHeight));
+        hitboxes.add(new Hitbox(2, hitboxWidth * 2, 0, hitboxWidth * 3, hitboxHeight));
+        hitboxes.add(new Hitbox(3, hitboxWidth * 3, 0, hitboxWidth * 4, hitboxHeight));
+
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+
+        initBackground();
+        initHitboxes();
+
         if (thread == null) {
             thread = new GameThread(getHolder(), this);
         }
@@ -77,6 +108,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         thread = null;
     }
 
+    /**
+     * Update logic
+     */
     public void update() {
         x = (x + 1) % X_MODULO;
 
@@ -97,6 +131,29 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     // ======== INPUT ========
 
+      /**
+     * Touch listener for hitboxes
+     *
+     * @param event Finger touch even
+     * @return A boolean
+     */
+    private boolean onTouchHitboxes(MotionEvent event){
+      int action = event.getActionMasked(); // not getAction for multitouch
+
+        switch (action) {
+            case MotionEvent.ACTION_DOWN: // first touch
+            case MotionEvent.ACTION_POINTER_DOWN: // other touches
+                int pointerIndex = event.getActionIndex();
+                float x = event.getX(pointerIndex);
+                float y = event.getY(pointerIndex);
+                for (Hitbox hitbox : hitboxes) {
+                    hitbox.handleTouch(x, y);
+                }
+                break;
+        }
+        return true;    
+    }
+  
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() != MotionEvent.ACTION_DOWN) {
@@ -145,7 +202,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (canvas == null) return;
 
         super.draw(canvas);
-        canvas.drawColor(Color.WHITE);
+        if (backgroundBitmap != null)
+            canvas.drawBitmap(backgroundBitmap, 0, 0, null);
 
         Paint paint = new Paint();
         paint.setTextSize(50);
