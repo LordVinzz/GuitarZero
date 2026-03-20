@@ -1,16 +1,19 @@
 package com.example.guitarzero.engine;
 
 public class Note {
-    public int corde;
+    public int string;
     public long absoluteTime;
     public long duration;
 
-    private static int frequencyShift;
+    private float frequency; // frequency in Hertz
+    private static float frequencyMultiplier; // frequency multiplier based on light sensor
 
-    public Note(int corde, long absoluteTime, long duration) {
-        this.corde = corde;
+
+    public Note(int string, long absoluteTime, long duration, float frequency) {
+        this.string = string;
         this.absoluteTime = absoluteTime;
         this.duration = duration;
+        this.frequency = frequency;
     }
 
     public double evalScore(long currentGameTimeMs) {
@@ -24,5 +27,13 @@ public class Note {
 
     public boolean isExpired(long currentGameTimeMs) {
         return currentGameTimeMs > absoluteTime + (3 * duration) / 2;
+    }
+
+    public float getCurrentFrequency() {
+        return frequency * frequencyMultiplier;
+    }
+
+    public static void setFrequencyMultiplier(float frequencyMultiplier) {
+        Note.frequencyMultiplier = frequencyMultiplier;
     }
 }

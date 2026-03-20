@@ -11,6 +11,8 @@ import android.widget.ImageButton;
 
 import com.example.guitarzero.LightSensorManager;
 import com.example.guitarzero.R;
+import com.example.guitarzero.engine.AudioPlayer;
+import com.example.guitarzero.engine.Note;
 import com.example.guitarzero.game.GameState;
 import com.example.guitarzero.render.canvas.GameView;
 import com.example.guitarzero.render.opengl.RopeGLSurfaceView;
@@ -25,17 +27,13 @@ public class MainActivity extends Activity {
     private android.widget.TextView mainMenuSelectedSongText;
     private ImageButton openMainMenuButton;
     private Button[] songButtons;
+    private AudioPlayer player;
     private LightSensorManager lightSensorManager = new LightSensorManager(this, lux -> {
-        // TODO: update note frequency multiplier, may need to have GameView as class attribute
         float multiplier; // ad-hoc
-        if (lux < 10) {
-            multiplier = 0.5f; // very dark light (finger on sensor)
-        } else if (lux < 1000) {
-            multiplier = 1.0f; // normal light
-        } else {
-            multiplier = 2.0f; // sunlight
-        }
-//        gameView.setFrequencyMultiplier(multiplier);
+        if (lux < 10) multiplier = 0.5f; // very dark light (finger on sensor)
+        else if (lux < 1000) multiplier = 1.0f; // normal light
+        else multiplier = 2.0f; // sunlight
+        player.setPitch(multiplier);
     });
 
     @Override
@@ -49,6 +47,7 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
         gameState = new GameState();
+        player = new AudioPlayer(this, R.raw.test);
 
         setupRenderViews();
         bindViews();
@@ -98,7 +97,7 @@ public class MainActivity extends Activity {
         openMainMenuButton = findViewById(R.id.button_open_main_menu);
         openMainMenuButton.setImageResource(R.drawable.ic_settings_overlay);
 
-        songButtons = new Button[] {
+        songButtons = new Button[]{
                 findViewById(R.id.button_song_0),
                 findViewById(R.id.button_song_1),
                 findViewById(R.id.button_song_2)
