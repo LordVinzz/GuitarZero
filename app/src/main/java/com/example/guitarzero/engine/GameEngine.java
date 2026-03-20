@@ -63,7 +63,8 @@ public class GameEngine {
 
     public GuitarString.RenderState[] getGuitarStringRenderStates(boolean visible) {
         float[] highlightStrengths = visible ? gameplaySession.getStringHighlightStrengths() : null;
-        return stringRack.getRenderStates(visible, highlightStrengths);
+        int comboTokens = visible ? gameplaySession.getComboTokens() : 0;
+        return stringRack.getRenderStates(visible, highlightStrengths, comboTokens);
     }
 
     public NoteWaveRenderState[] getNoteWaveRenderStates(boolean visible) {

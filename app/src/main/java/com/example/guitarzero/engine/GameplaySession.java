@@ -5,10 +5,10 @@ import java.util.Iterator;
 import java.util.List;
 
 public class GameplaySession {
-    private static final double MIN_SCORE_TO_HIT = 0.01;
     private static final float MAX_NOTE_SCORE = 1000f;
     private static final long APPROACH_TIME_MS = 2000L;
     private static final float NOTE_HIT_Y_NORMALIZED = 0.75f;
+    private static final double PERFECT_SCORE_EPSILON = 0.001;
 
     public static final class NoteWaveState {
         public final int stringIndex;
@@ -24,6 +24,7 @@ public class GameplaySession {
 
     private final int stringCount;
     private final List<Note> notes = new ArrayList<Note>();
+    private final ComboState comboState = new ComboState();
 
     private long gameTimeMs;
     private double score;
@@ -36,10 +37,19 @@ public class GameplaySession {
     public void reset() {
         gameTimeMs = 0L;
         score = 0d;
+        comboState.reset();
         notes.clear();
 
         for (int stringIndex = 0; stringIndex < stringCount; stringIndex++) {
             notes.add(new Note(stringIndex, 2000L * (stringIndex + 1), 1000));
+        }
+
+        for (int stringIndex = 0; stringIndex < stringCount; stringIndex++) {
+            notes.add(new Note(stringIndex, 8000 + 2000L * (stringIndex + 1), 1000));
+        }
+
+        for (int stringIndex = 0; stringIndex < stringCount; stringIndex++) {
+            notes.add(new Note(stringIndex, 16000 + 2000L * (stringIndex + 1), 1000));
         }
     }
 
@@ -50,6 +60,7 @@ public class GameplaySession {
         while (iterator.hasNext()) {
             Note note = iterator.next();
             if (note.isExpired(gameTimeMs)) {
+                comboState.registerMiss();
                 iterator.remove();
             }
         }
@@ -71,9 +82,16 @@ public class GameplaySession {
             }
         }
 
-        if (bestNote != null && bestScore >= MIN_SCORE_TO_HIT) {
-            score += bestScore;
-            notes.remove(bestNote);
+        if (bestNote == null || bestScore <= 0d) {
+            comboState.registerMiss();
+            return;
+        }
+
+        score += bestScore * comboState.getMultiplier();
+        notes.remove(bestNote);
+
+        if (isPerfectScore(bestScore)) {
+            comboState.registerPerfect();
         }
     }
 
@@ -87,6 +105,14 @@ public class GameplaySession {
 
     public int getRemainingNotesCount() {
         return notes.size();
+    }
+
+    public int getComboMultiplier() {
+        return comboState.getMultiplier();
+    }
+
+    public int getComboTokens() {
+        return comboState.getTokens();
     }
 
     public float[] getStringHighlightStrengths() {
@@ -141,5 +167,9 @@ public class GameplaySession {
 
     private float clamp(float value) {
         return Math.max(0f, Math.min(value, 1f));
+    }
+
+    private boolean isPerfectScore(double scoreValue) {
+        return scoreValue >= (MAX_NOTE_SCORE - PERFECT_SCORE_EPSILON);
     }
 }

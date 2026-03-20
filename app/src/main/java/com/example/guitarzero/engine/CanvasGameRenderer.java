@@ -10,7 +10,7 @@ import android.graphics.Paint;
 import com.example.guitarzero.R;
 
 public class CanvasGameRenderer {
-    private Bitmap backgroundBitmap;
+    private Bitmap[] backgroundBitmaps;
     private final Paint hudPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public CanvasGameRenderer() {
@@ -23,17 +23,12 @@ public class CanvasGameRenderer {
             return;
         }
 
-        Bitmap decodedBitmap = BitmapFactory.decodeResource(resources, R.drawable.background);
-        if (decodedBitmap == null) {
-            backgroundBitmap = null;
-            return;
-        }
-
         release();
-        backgroundBitmap = Bitmap.createScaledBitmap(decodedBitmap, width, height, true);
-        if (decodedBitmap != backgroundBitmap) {
-            decodedBitmap.recycle();
-        }
+        backgroundBitmaps = new Bitmap[] {
+                loadScaledBitmap(resources, R.drawable.background, width, height),
+                loadScaledBitmap(resources, R.drawable.background_boost_1, width, height),
+                loadScaledBitmap(resources, R.drawable.background_boost_2, width, height)
+        };
     }
 
     public void draw(Canvas canvas, boolean inGame, GameplaySession gameplaySession) {
@@ -42,6 +37,7 @@ public class CanvasGameRenderer {
             return;
         }
 
+        Bitmap backgroundBitmap = getBackgroundBitmap(gameplaySession.getComboMultiplier());
         if (backgroundBitmap != null) {
             canvas.drawBitmap(backgroundBitmap, 0, 0, null);
         }
@@ -54,12 +50,49 @@ public class CanvasGameRenderer {
                 260,
                 hudPaint
         );
+        canvas.drawText("Combo: x" + gameplaySession.getComboMultiplier(), 50, 340, hudPaint);
+        canvas.drawText("Jetons: " + gameplaySession.getComboTokens() + "/10", 50, 420, hudPaint);
     }
 
     public void release() {
-        if (backgroundBitmap != null && !backgroundBitmap.isRecycled()) {
-            backgroundBitmap.recycle();
+        if (backgroundBitmaps == null) {
+            return;
         }
-        backgroundBitmap = null;
+
+        for (Bitmap backgroundBitmap : backgroundBitmaps) {
+            if (backgroundBitmap != null && !backgroundBitmap.isRecycled()) {
+                backgroundBitmap.recycle();
+            }
+        }
+        backgroundBitmaps = null;
+    }
+
+    private Bitmap loadScaledBitmap(Resources resources, int drawableResId, int width, int height) {
+        Bitmap decodedBitmap = BitmapFactory.decodeResource(resources, drawableResId);
+        if (decodedBitmap == null) {
+            return null;
+        }
+
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(decodedBitmap, width, height, true);
+        if (decodedBitmap != scaledBitmap) {
+            decodedBitmap.recycle();
+        }
+        return scaledBitmap;
+    }
+
+    private Bitmap getBackgroundBitmap(int comboMultiplier) {
+        if (backgroundBitmaps == null || backgroundBitmaps.length == 0) {
+            return null;
+        }
+
+        if (comboMultiplier <= 1) {
+            return backgroundBitmaps[0];
+        }
+
+        if (comboMultiplier == 2 && backgroundBitmaps.length > 1) {
+            return backgroundBitmaps[1];
+        }
+
+        return backgroundBitmaps[Math.min(2, backgroundBitmaps.length - 1)];
     }
 }

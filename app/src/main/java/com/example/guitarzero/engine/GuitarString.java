@@ -5,6 +5,7 @@ public class GuitarString {
     private static final float DEFAULT_SCALE_Y = 1f;
     private static final float BASE_DISPLACEMENT = 1.0f;
     private static final float ANGULAR_FREQUENCY_RADIANS = 28f;
+    private static final float TOKEN_ANGULAR_FREQUENCY_BONUS = 1.8f;
     private static final float DAMPING = 4.5f;
     private static final float STOP_ENVELOPE_THRESHOLD = 0.01f;
 
@@ -99,7 +100,7 @@ public class GuitarString {
         oscillationTimeSeconds = 0f;
     }
 
-    public RenderState getRenderState(boolean visible, float highlightStrength) {
+    public RenderState getRenderState(boolean visible, float highlightStrength, int comboTokens) {
         return new RenderState(
                 stringIndex,
                 visible,
@@ -109,7 +110,7 @@ public class GuitarString {
                 highlightStrength,
                 oscillationTimeSeconds,
                 oscillating ? BASE_DISPLACEMENT : 0f,
-                ANGULAR_FREQUENCY_RADIANS,
+                ANGULAR_FREQUENCY_RADIANS + (comboTokens * TOKEN_ANGULAR_FREQUENCY_BONUS),
                 DAMPING
         );
     }

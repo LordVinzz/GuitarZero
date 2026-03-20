@@ -48,7 +48,11 @@ public class StringRack {
         return -1;
     }
 
-    public GuitarString.RenderState[] getRenderStates(boolean visible, float[] highlightStrengths) {
+    public GuitarString.RenderState[] getRenderStates(
+            boolean visible,
+            float[] highlightStrengths,
+            int comboTokens
+    ) {
         GuitarString.RenderState[] renderStates = new GuitarString.RenderState[guitarStrings.size()];
         for (int stringIndex = 0; stringIndex < guitarStrings.size(); stringIndex++) {
             float highlightStrength = 0f;
@@ -57,7 +61,8 @@ public class StringRack {
             }
             renderStates[stringIndex] = guitarStrings.get(stringIndex).getRenderState(
                     visible,
-                    highlightStrength
+                    highlightStrength,
+                    comboTokens
             );
         }
         return renderStates;
