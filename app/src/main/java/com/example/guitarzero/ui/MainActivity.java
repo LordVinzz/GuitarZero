@@ -39,9 +39,13 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            scoreTextView.setText(
-                    getString(R.string.score_overlay_format, gameState.getCurrentScore())
-            );
+            if (gameState.isCountdownActive()) {
+                scoreTextView.setText(gameState.getCountdownLabel());
+            } else {
+                scoreTextView.setText(
+                        getString(R.string.score_overlay_format, gameState.getCurrentScore())
+                );
+            }
 
             if (gameState.getCurrentScreen() == GameState.ScreenState.IN_GAME) {
                 scoreTextView.postDelayed(this, 33L);

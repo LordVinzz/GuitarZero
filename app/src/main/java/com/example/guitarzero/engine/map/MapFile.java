@@ -83,6 +83,8 @@ public final class MapFile {
     private final int midiChannelIndex;
     private final int backgroundAudioResId;
     private final int hitAudioResId;
+    private final float backgroundAudioVolume;
+    private final float hitAudioVolume;
     private final AudioPlayer backgroundAudioPlayer;
     private final AudioPlayer hitAudioPlayer;
     private float hitAudioLightPitchMultiplier = 1f;
@@ -97,6 +99,8 @@ public final class MapFile {
             int midiChannelIndex,
             int backgroundAudioResId,
             int hitAudioResId,
+            float backgroundAudioVolume,
+            float hitAudioVolume,
             AudioPlayer backgroundAudioPlayer,
             AudioPlayer hitAudioPlayer,
             List<TempoChange> tempoChanges,
@@ -109,6 +113,8 @@ public final class MapFile {
         this.midiChannelIndex = midiChannelIndex;
         this.backgroundAudioResId = backgroundAudioResId;
         this.hitAudioResId = hitAudioResId;
+        this.backgroundAudioVolume = backgroundAudioVolume;
+        this.hitAudioVolume = hitAudioVolume;
         this.backgroundAudioPlayer = backgroundAudioPlayer;
         this.hitAudioPlayer = hitAudioPlayer;
         this.tempoChanges = Collections.unmodifiableList(new ArrayList<TempoChange>(tempoChanges));
@@ -125,7 +131,9 @@ public final class MapFile {
             int stringCount,
             long timelineOffsetMs,
             int backgroundAudioResId,
-            int hitAudioResId
+            int hitAudioResId,
+            float backgroundAudioVolume,
+            float hitAudioVolume
     ) {
         Context applicationContext = context.getApplicationContext();
         Resources resources = applicationContext.getResources();
@@ -141,8 +149,10 @@ public final class MapFile {
                     timelineOffsetMs,
                     backgroundAudioResId,
                     hitAudioResId,
-                    createAudioPlayer(applicationContext, backgroundAudioResId),
-                    createAudioPlayer(applicationContext, hitAudioResId),
+                    backgroundAudioVolume,
+                    hitAudioVolume,
+                    createAudioPlayer(applicationContext, backgroundAudioResId, backgroundAudioVolume),
+                    createAudioPlayer(applicationContext, hitAudioResId, hitAudioVolume),
                     readAllBytes(inputStream)
             );
         } catch (IOException exception) {
@@ -165,6 +175,8 @@ public final class MapFile {
             long timelineOffsetMs,
             int backgroundAudioResId,
             int hitAudioResId,
+            float backgroundAudioVolume,
+            float hitAudioVolume,
             AudioPlayer backgroundAudioPlayer,
             AudioPlayer hitAudioPlayer,
             byte[] midiBytes
@@ -244,6 +256,8 @@ public final class MapFile {
                 midiChannelIndex,
                 backgroundAudioResId,
                 hitAudioResId,
+                backgroundAudioVolume,
+                hitAudioVolume,
                 backgroundAudioPlayer,
                 hitAudioPlayer,
                 tempoChanges,
@@ -292,6 +306,14 @@ public final class MapFile {
         return hitAudioResId;
     }
 
+    public float getBackgroundAudioVolume() {
+        return backgroundAudioVolume;
+    }
+
+    public float getHitAudioVolume() {
+        return hitAudioVolume;
+    }
+
     public List<TempoChange> getTempoChanges() {
         return tempoChanges;
     }
@@ -318,8 +340,12 @@ public final class MapFile {
     }
 
     public void startBackgroundAudio() {
+        startBackgroundAudio(0L);
+    }
+
+    public void startBackgroundAudio(long startPositionMs) {
         if (backgroundAudioPlayer != null) {
-            backgroundAudioPlayer.play();
+            backgroundAudioPlayer.playFrom(startPositionMs);
         }
     }
 
@@ -364,12 +390,12 @@ public final class MapFile {
         return outputStream.toByteArray();
     }
 
-    private static AudioPlayer createAudioPlayer(Context context, int resId) {
+    private static AudioPlayer createAudioPlayer(Context context, int resId, float volume) {
         if (resId == 0) {
             return null;
         }
 
-        return new AudioPlayer(context, resId);
+        return new AudioPlayer(context, resId, volume);
     }
 
     private static float computeSamplePitchMultiplier(int midiPitch) {

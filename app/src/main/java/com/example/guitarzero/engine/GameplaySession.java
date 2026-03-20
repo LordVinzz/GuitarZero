@@ -31,11 +31,12 @@ public class GameplaySession {
         }
     }
 
-    private final MapFile mapFile;
+    private MapFile mapFile;
     private final int stringCount;
     private final List<Note> notes = new ArrayList<Note>();
     private final ComboState comboState = new ComboState();
 
+    private long previewStartTimeMs;
     private long gameTimeMs;
     private double score;
 
@@ -45,12 +46,18 @@ public class GameplaySession {
         reset();
     }
 
+    public void setMapFile(MapFile mapFile) {
+        this.mapFile = mapFile;
+        reset();
+    }
+
     public void reset() {
-        gameTimeMs = 0L;
         score = 0d;
         comboState.reset();
         notes.clear();
         notes.addAll(mapFile.createRuntimeNotes());
+        previewStartTimeMs = computePreviewStartTimeMs();
+        gameTimeMs = previewStartTimeMs;
     }
 
     public void update(float deltaTimeSeconds) {
@@ -99,6 +106,10 @@ public class GameplaySession {
 
     public long getGameTimeMs() {
         return gameTimeMs;
+    }
+
+    public long getPreviewStartTimeMs() {
+        return previewStartTimeMs;
     }
 
     public double getScore() {
@@ -183,5 +194,24 @@ public class GameplaySession {
 
     private boolean isPerfectScore(double scoreValue) {
         return scoreValue >= (MAX_NOTE_SCORE - PERFECT_SCORE_EPSILON);
+    }
+
+    private long computePreviewStartTimeMs() {
+        if (notes.isEmpty()) {
+            return 0L;
+        }
+
+        long earliestNoteTimeMs = Long.MAX_VALUE;
+        for (Note note : notes) {
+            if (note.absoluteTime < earliestNoteTimeMs) {
+                earliestNoteTimeMs = note.absoluteTime;
+            }
+        }
+
+        if (earliestNoteTimeMs == Long.MAX_VALUE) {
+            return 0L;
+        }
+
+        return Math.max(0L, earliestNoteTimeMs - APPROACH_TIME_MS);
     }
 }

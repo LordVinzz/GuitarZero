@@ -27,7 +27,6 @@ public class GameState {
     private int selectedSongIndex = 0;
 
     public GameState(Context context) {
-        Resources resources = context.getResources();
         mapFiles = new MapFile[] {
                 MapFile.load(
                         context,
@@ -35,14 +34,30 @@ public class GameState {
                         "scom",
                         "scom.mid",
                         DEFAULT_MAP_SEED,
-                        3, //guitar channel
+                        4,
                         STRING_COUNT,
                         0L,
                         R.raw.msc_scom,
-                        R.raw.guitar_snd
+                        R.raw.guitar_snd,
+                        1.0f,
+                        0.2f
+                ),
+                MapFile.load(
+                        context,
+                        R.raw.mop,
+                        "mop",
+                        "mop.mid",
+                        DEFAULT_MAP_SEED,
+                        5,
+                        STRING_COUNT,
+                        0L,
+                        R.raw.msc_mop,
+                        R.raw.guitar_snd,
+                        1.0f,
+                        0.2f
                 )
         };
-        gameEngine = new GameEngine(STRING_COUNT, mapFiles[0]);
+        gameEngine = new GameEngine(STRING_COUNT, mapFiles[selectedSongIndex]);
     }
 
     public synchronized void update(float deltaTimeSeconds) {
@@ -71,8 +86,9 @@ public class GameState {
 
     public synchronized void startGame(int songIndex) {
         selectSong(songIndex);
+        gameEngine.setMapFile(mapFiles[selectedSongIndex]);
+        gameEngine.beginGameplay();
         currentScreen = ScreenState.IN_GAME;
-        gameEngine.startMapAudio();
     }
 
     public synchronized ScreenState getCurrentScreen() {
@@ -129,7 +145,9 @@ public class GameState {
 
     public synchronized void onAppResume() {
         if (currentScreen == ScreenState.IN_GAME) {
-            gameEngine.startMapAudio();
+            if (!gameEngine.isCountdownActive()) {
+                gameEngine.startMapAudio();
+            }
         }
     }
 
@@ -139,6 +157,18 @@ public class GameState {
 
     public synchronized void setHitSoundPitch(float pitch) {
         gameEngine.setHitAudioPitch(pitch);
+    }
+
+    public synchronized boolean isCountdownActive() {
+        return currentScreen == ScreenState.IN_GAME && gameEngine.isCountdownActive();
+    }
+
+    public synchronized String getCountdownLabel() {
+        if (!isCountdownActive()) {
+            return "";
+        }
+
+        return gameEngine.getCountdownLabel();
     }
 
     private boolean isValidSongIndex(int songIndex) {

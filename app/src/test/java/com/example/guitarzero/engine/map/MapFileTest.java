@@ -21,12 +21,31 @@ public class MapFileTest {
 
     @Test
     public void mapFileParsesScomIntoSortedPlayableNotes() throws IOException {
-        MapFile mapFile = createMapFile(42L);
+        MapFile mapFile = createMapFile("scom.mid", 42L);
         List<MapFile.StoredNote> storedNotes = mapFile.getStoredNotes();
 
         assertFalse(storedNotes.isEmpty());
         assertFalse(mapFile.getTempoChanges().isEmpty());
         assertTrue(storedNotes.get(0).getAbsoluteTimeMs() > 10000L);
+
+        long lastAbsoluteTimeMs = Long.MIN_VALUE;
+        for (MapFile.StoredNote storedNote : storedNotes) {
+            assertTrue(storedNote.getDurationMs() > 0L);
+            assertTrue(storedNote.getStringIndex() >= 0);
+            assertTrue(storedNote.getStringIndex() < TEST_STRING_COUNT);
+            assertTrue(storedNote.getMidiPitch() >= 0);
+            assertTrue(storedNote.getAbsoluteTimeMs() >= lastAbsoluteTimeMs);
+            lastAbsoluteTimeMs = storedNote.getAbsoluteTimeMs();
+        }
+    }
+
+    @Test
+    public void mapFileParsesMopIntoSortedPlayableNotes() throws IOException {
+        MapFile mapFile = createMapFile("mop.mid", 42L);
+        List<MapFile.StoredNote> storedNotes = mapFile.getStoredNotes();
+
+        assertFalse(storedNotes.isEmpty());
+        assertFalse(mapFile.getTempoChanges().isEmpty());
 
         long lastAbsoluteTimeMs = Long.MIN_VALUE;
         for (MapFile.StoredNote storedNote : storedNotes) {
@@ -67,6 +86,8 @@ public class MapFileTest {
                 0L,
                 0,
                 0,
+                1.0f,
+                1.0f,
                 null,
                 null,
                 midiBytes
@@ -79,9 +100,9 @@ public class MapFileTest {
 
     @Test
     public void mapFileSeedKeepsStringPlacementDeterministic() throws IOException {
-        MapFile firstMap = createMapFile(42L);
-        MapFile secondMap = createMapFile(42L);
-        MapFile differentSeedMap = createMapFile(7L);
+        MapFile firstMap = createMapFile("scom.mid", 42L);
+        MapFile secondMap = createMapFile("scom.mid", 42L);
+        MapFile differentSeedMap = createMapFile("scom.mid", 7L);
 
         List<MapFile.StoredNote> firstNotes = firstMap.getStoredNotes();
         List<MapFile.StoredNote> secondNotes = secondMap.getStoredNotes();
@@ -121,7 +142,7 @@ public class MapFileTest {
 
     @Test
     public void createRuntimeNotesReturnsFreshNoteInstances() throws IOException {
-        MapFile mapFile = createMapFile(42L);
+        MapFile mapFile = createMapFile("scom.mid", 42L);
 
         List<Note> firstRuntimeNotes = mapFile.createRuntimeNotes();
         List<Note> secondRuntimeNotes = mapFile.createRuntimeNotes();
@@ -134,10 +155,10 @@ public class MapFileTest {
         assertEquals(firstRuntimeNotes.get(0).string, secondRuntimeNotes.get(0).string);
     }
 
-    private MapFile createMapFile(long seed) throws IOException {
+    private MapFile createMapFile(String midiFileName, long seed) throws IOException {
         return MapFile.fromMidiBytes(
-                "scom",
-                "scom.mid",
+                midiFileName,
+                midiFileName,
                 seed,
                 0,
                 TEST_CHANNEL_INDEX,
@@ -145,23 +166,25 @@ public class MapFileTest {
                 0L,
                 0,
                 0,
+                1.0f,
+                1.0f,
                 null,
                 null,
-                Files.readAllBytes(resolveMidiPath())
+                Files.readAllBytes(resolveMidiPath(midiFileName))
         );
     }
 
-    private Path resolveMidiPath() {
-        Path projectRootPath = Paths.get("app/src/main/res/raw/scom.mid");
+    private Path resolveMidiPath(String midiFileName) {
+        Path projectRootPath = Paths.get("app/src/main/res/raw/" + midiFileName);
         if (Files.exists(projectRootPath)) {
             return projectRootPath;
         }
 
-        Path modulePath = Paths.get("src/main/res/raw/scom.mid");
+        Path modulePath = Paths.get("src/main/res/raw/" + midiFileName);
         if (Files.exists(modulePath)) {
             return modulePath;
         }
 
-        throw new IllegalStateException("Unable to locate scom.mid for unit tests.");
+        throw new IllegalStateException("Unable to locate " + midiFileName + " for unit tests.");
     }
 }

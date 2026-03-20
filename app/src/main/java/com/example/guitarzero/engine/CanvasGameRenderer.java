@@ -42,7 +42,6 @@ public class CanvasGameRenderer {
             canvas.drawBitmap(backgroundBitmap, 0, 0, null);
         }
 
-        canvas.drawText("Time: " + gameplaySession.getGameTimeMs(), 50, 100, hudPaint);
         canvas.drawText("Score: " + gameplaySession.getScore(), 50, 180, hudPaint);
         canvas.drawText(
                 "Notes restantes: " + gameplaySession.getRemainingNotesCount(),

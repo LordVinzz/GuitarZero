@@ -6,12 +6,18 @@ import android.graphics.Canvas;
 import com.example.guitarzero.engine.map.MapFile;
 
 public class GameEngine {
+    private static final float COUNTDOWN_STEP_DURATION_MS = 1000f;
+    private static final float COUNTDOWN_TOTAL_DURATION_MS = 4000f;
+
     private final StringRack stringRack;
     private final GameplaySession gameplaySession;
     private final CanvasGameRenderer canvasGameRenderer;
-    private final MapFile mapFile;
+    private MapFile mapFile;
 
     private boolean wasInGame;
+    private float countdownRemainingMs;
+    private boolean backgroundAudioStarted;
+    private float hitAudioPitchMultiplier = 1f;
 
     public GameEngine(int stringCount, MapFile mapFile) {
         this.mapFile = mapFile;
@@ -30,8 +36,12 @@ public class GameEngine {
         }
 
         if (!wasInGame) {
-            resetRuntimeState();
-            wasInGame = true;
+            beginGameplay();
+        }
+
+        if (countdownRemainingMs > 0f) {
+            updateCountdown(deltaTimeSeconds);
+            return;
         }
 
         stringRack.update(deltaTimeSeconds);
@@ -50,6 +60,10 @@ public class GameEngine {
     public boolean handleTouch(float touchX, float touchY, boolean inGame) {
         if (!inGame) {
             return false;
+        }
+
+        if (countdownRemainingMs > 0f) {
+            return true;
         }
 
         int touchedStringIndex = stringRack.handleTouch(touchX, touchY);
@@ -105,17 +119,77 @@ public class GameEngine {
     public void resetRuntimeState() {
         gameplaySession.reset();
         stringRack.resetOscillations();
+        countdownRemainingMs = COUNTDOWN_TOTAL_DURATION_MS;
+        backgroundAudioStarted = false;
+    }
+
+    public void beginGameplay() {
+        resetRuntimeState();
+        wasInGame = true;
+    }
+
+    public void setMapFile(MapFile mapFile) {
+        if (this.mapFile == mapFile) {
+            mapFile.setHitAudioPitch(hitAudioPitchMultiplier);
+            return;
+        }
+
+        stopMapAudio();
+        this.mapFile = mapFile;
+        this.mapFile.setHitAudioPitch(hitAudioPitchMultiplier);
+        gameplaySession.setMapFile(mapFile);
+        stringRack.resetOscillations();
+        countdownRemainingMs = 0f;
     }
 
     public void startMapAudio() {
-        mapFile.startBackgroundAudio();
+        if (backgroundAudioStarted) {
+            return;
+        }
+
+        mapFile.startBackgroundAudio(gameplaySession.getPreviewStartTimeMs());
+        backgroundAudioStarted = true;
     }
 
     public void stopMapAudio() {
         mapFile.stopAllAudio();
+        backgroundAudioStarted = false;
     }
 
     public void setHitAudioPitch(float pitch) {
+        hitAudioPitchMultiplier = pitch;
         mapFile.setHitAudioPitch(pitch);
+    }
+
+    public boolean isCountdownActive() {
+        return countdownRemainingMs > 0f;
+    }
+
+    public String getCountdownLabel() {
+        if (!isCountdownActive()) {
+            return "";
+        }
+
+        if (countdownRemainingMs > (COUNTDOWN_STEP_DURATION_MS * 3f)) {
+            return "3";
+        }
+        if (countdownRemainingMs > (COUNTDOWN_STEP_DURATION_MS * 2f)) {
+            return "2";
+        }
+        if (countdownRemainingMs > COUNTDOWN_STEP_DURATION_MS) {
+            return "1";
+        }
+        return "GO";
+    }
+
+    private void updateCountdown(float deltaTimeSeconds) {
+        countdownRemainingMs = Math.max(
+                0f,
+                countdownRemainingMs - (deltaTimeSeconds * 1000f)
+        );
+
+        if (countdownRemainingMs <= 0f) {
+            startMapAudio();
+        }
     }
 }
