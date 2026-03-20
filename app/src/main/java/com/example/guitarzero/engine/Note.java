@@ -1,4 +1,4 @@
-package com.example.guitarzero;
+package com.example.guitarzero.engine;
 
 public class Note {
     public int corde;

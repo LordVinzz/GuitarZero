@@ -1,4 +1,4 @@
-package com.example.guitarzero;
+package com.example.guitarzero.engine;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;

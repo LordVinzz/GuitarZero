@@ -3,12 +3,14 @@ package com.example.guitarzero.render.canvas;
 import android.graphics.Canvas;
 import android.view.SurfaceHolder;
 
+import com.example.guitarzero.engine.FrameTimer;
+
 public class GameThread extends Thread {
     private static final long FRAME_DELAY_MS = 16L;
-    private static final float DEFAULT_DELTA_TIME_SECONDS = FRAME_DELAY_MS / 1000f;
 
     private final SurfaceHolder surfaceHolder;
     private final GameView gameView;
+    private final FrameTimer frameTimer = new FrameTimer(FRAME_DELAY_MS);
     private volatile boolean running;
 
     public GameThread(SurfaceHolder surfaceHolder, GameView gameView) {
@@ -23,16 +25,9 @@ public class GameThread extends Thread {
 
     @Override
     public void run() {
-        long previousFrameTimeNanos = System.nanoTime();
-
         while (running) {
             long frameStartTimeNanos = System.nanoTime();
-            float deltaTimeSeconds =
-                    (frameStartTimeNanos - previousFrameTimeNanos) / 1_000_000_000f;
-            if (deltaTimeSeconds <= 0f) {
-                deltaTimeSeconds = DEFAULT_DELTA_TIME_SECONDS;
-            }
-            previousFrameTimeNanos = frameStartTimeNanos;
+            float deltaTimeSeconds = frameTimer.getDeltaTimeSeconds(frameStartTimeNanos);
 
             Canvas canvas = null;
 
@@ -54,8 +49,7 @@ public class GameThread extends Thread {
             }
 
             try {
-                long frameDurationMs = (System.nanoTime() - frameStartTimeNanos) / 1_000_000L;
-                long remainingDelayMs = FRAME_DELAY_MS - frameDurationMs;
+                long remainingDelayMs = frameTimer.getRemainingDelayMs(frameStartTimeNanos);
                 if (remainingDelayMs > 0L) {
                     Thread.sleep(remainingDelayMs);
                 }

@@ -1,15 +1,13 @@
 package com.example.guitarzero.game;
 
+import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Color;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.example.guitarzero.engine.GameEngine;
+import com.example.guitarzero.engine.GuitarString;
 
 public class GameState {
     public static final int STRING_COUNT = 4;
-
-    private static final float MAX_DELTA_TIME_SECONDS = 0.05f;
 
     public enum ScreenState {
         IN_GAME,
@@ -19,48 +17,29 @@ public class GameState {
 
     private final String[] songs = {"Fuzz Intro", "Velvet Riff", "Arcade Solo"};
     private final String[] levels = {"Niveau 1", "Niveau 2", "Niveau 3"};
-    private final List<GuitarString> guitarStrings = new ArrayList<GuitarString>(STRING_COUNT);
+    private final GameEngine gameEngine = new GameEngine(STRING_COUNT);
 
     private ScreenState currentScreen = ScreenState.MAIN_MENU;
     private int selectedSongIndex = 0;
     private int currentLevelIndex = 0;
-    private float elapsedInGameSeconds = 0f;
 
     public GameState() {
-        for (int stringIndex = 0; stringIndex < STRING_COUNT; stringIndex++) {
-            guitarStrings.add(new GuitarString(stringIndex));
-        }
     }
 
     public synchronized void update(float deltaTimeSeconds) {
-        float clampedDeltaTime = Math.max(0f, Math.min(deltaTimeSeconds, MAX_DELTA_TIME_SECONDS));
-
-        if (currentScreen == ScreenState.IN_GAME) {
-            elapsedInGameSeconds += clampedDeltaTime;
-
-            for (GuitarString guitarString : guitarStrings) {
-                guitarString.update(clampedDeltaTime);
-            }
-        }
+        gameEngine.update(deltaTimeSeconds, currentScreen == ScreenState.IN_GAME);
     }
 
     public synchronized void draw(Canvas canvas) {
-        canvas.drawColor(Color.WHITE);
-
-        if (currentScreen != ScreenState.IN_GAME) {
-            return;
-        }
-
+        gameEngine.draw(canvas, currentScreen == ScreenState.IN_GAME);
     }
 
     public synchronized void showMainMenu() {
         currentScreen = ScreenState.MAIN_MENU;
-        resetStringOscillations();
     }
 
     public synchronized void showChooseSong() {
         currentScreen = ScreenState.CHOOSE_SONG;
-        resetStringOscillations();
     }
 
     public synchronized void selectSong(int songIndex) {
@@ -71,10 +50,7 @@ public class GameState {
 
     public synchronized void startGame(int songIndex) {
         selectSong(songIndex);
-
         currentScreen = ScreenState.IN_GAME;
-        elapsedInGameSeconds = 0f;
-        resetStringOscillations();
     }
 
     public synchronized ScreenState getCurrentScreen() {
@@ -105,55 +81,23 @@ public class GameState {
         return levels[currentLevelIndex];
     }
 
-    public synchronized void setStringHitboxLayout(int surfaceWidth, int surfaceHeight) {
-        if (surfaceWidth <= 0 || surfaceHeight <= 0) {
-            return;
-        }
-
-        float hitboxWidth = surfaceWidth / (float) STRING_COUNT;
-        for (int stringIndex = 0; stringIndex < guitarStrings.size(); stringIndex++) {
-            float hitboxLeft = stringIndex * hitboxWidth;
-            float hitboxRight = hitboxLeft + hitboxWidth;
-            guitarStrings.get(stringIndex).setHitboxBounds(
-                    hitboxLeft,
-                    0f,
-                    hitboxRight,
-                    surfaceHeight,
-                    surfaceWidth
-            );
-        }
+    public synchronized void onSurfaceChanged(Resources resources, int surfaceWidth, int surfaceHeight) {
+        gameEngine.onSurfaceChanged(resources, surfaceWidth, surfaceHeight);
     }
 
-    public synchronized int handleStringTouch(float touchX, float touchY) {
-        if (currentScreen != ScreenState.IN_GAME) {
-            return -1;
-        }
+    public synchronized void onSurfaceDestroyed() {
+        gameEngine.onSurfaceDestroyed();
+    }
 
-        for (GuitarString guitarString : guitarStrings) {
-            if (guitarString.handleTouch(touchX, touchY)) {
-                return guitarString.getStringIndex();
-            }
-        }
-
-        return -1;
+    public synchronized boolean handleTouch(float touchX, float touchY) {
+        return gameEngine.handleTouch(touchX, touchY, currentScreen == ScreenState.IN_GAME);
     }
 
     public synchronized GuitarString.RenderState[] getGuitarStringRenderStates() {
-        boolean visible = currentScreen == ScreenState.IN_GAME;
-        GuitarString.RenderState[] renderStates = new GuitarString.RenderState[guitarStrings.size()];
-        for (int stringIndex = 0; stringIndex < guitarStrings.size(); stringIndex++) {
-            renderStates[stringIndex] = guitarStrings.get(stringIndex).getRenderState(visible);
-        }
-        return renderStates;
+        return gameEngine.getGuitarStringRenderStates(currentScreen == ScreenState.IN_GAME);
     }
 
     private boolean isValidSongIndex(int songIndex) {
         return songIndex >= 0 && songIndex < songs.length;
-    }
-
-    private void resetStringOscillations() {
-        for (GuitarString guitarString : guitarStrings) {
-            guitarString.resetOscillation();
-        }
     }
 }

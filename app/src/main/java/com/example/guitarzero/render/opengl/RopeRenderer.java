@@ -9,8 +9,8 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 
 import com.example.guitarzero.R;
+import com.example.guitarzero.engine.GuitarString;
 import com.example.guitarzero.game.GameState;
-import com.example.guitarzero.game.GuitarString;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

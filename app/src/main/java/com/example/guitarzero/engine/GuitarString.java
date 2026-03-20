@@ -1,6 +1,4 @@
-package com.example.guitarzero.game;
-
-import com.example.guitarzero.Hitbox;
+package com.example.guitarzero.engine;
 
 public class GuitarString {
     private static final float DEFAULT_SCALE_X = 0.25f;
